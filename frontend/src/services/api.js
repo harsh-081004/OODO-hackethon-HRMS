@@ -29,7 +29,7 @@ export const clearStoredToken = () => {
 // Create Axios Instance
 const api = axios.create({
   baseURL: API_BASE,
-  timeout: 5000, // Add 5 second timeout so requests don't hang indefinitely
+  timeout: 60000, // Increased timeout to 60s for Render cold starts and Cloudinary uploads
   headers: {
     'Content-Type': 'application/json',
   },

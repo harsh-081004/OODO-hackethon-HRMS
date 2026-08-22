@@ -26,7 +26,7 @@ app.use(express.urlencoded({ extended: true }));
 
 // enable cors
 app.use(cors({
-  origin: config.frontendUrl,
+  origin: [config.frontendUrl, 'http://localhost:5173'],
   optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
 }));
 
