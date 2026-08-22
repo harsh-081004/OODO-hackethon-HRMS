@@ -1,0 +1,20 @@
+node_modules/
+.env
+.DS_Store
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Local uploads folder if used instead of Cloudinary
+uploads/
+
+# Coverage directory used by tools like istanbul
+coverage/
+
+# nyc test coverage
+.nyc_output/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
