@@ -9,7 +9,9 @@ const router = express.Router();
 
 router.post('/register', upload.single('companyLogo'), validate(authValidation.register), authController.register);
 router.post('/login', validate(authValidation.login), authController.login);
-router.patch('/change-password', auth(), validate(authValidation.changePassword), authController.changePassword);
-router.get('/verify-email', authController.verifyEmail);
+router.post('/change-password', auth(), validate(authValidation.changePassword), authController.changePassword);
+router.post('/request-password-otp', auth(), authController.requestPasswordOtp);
+router.post('/change-password-otp', auth(), validate(authValidation.changePasswordWithOtp), authController.changePasswordWithOtp);
+router.post('/verify-email', validate(authValidation.verifyEmail), authController.verifyEmail);
 
 module.exports = router;

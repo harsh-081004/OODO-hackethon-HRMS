@@ -87,7 +87,7 @@ const createEmployee = async (employeeBody, adminUser) => {
   const user = await User.create(newEmployee);
   
   // Send email asynchronously without blocking the response
-  emailService.sendWelcomeEmail(user.email, generatedPassword).catch(err => {
+  emailService.sendWelcomeEmail(user.email, generatedPassword, user.fullName).catch(err => {
     console.error('Failed to send welcome email:', err);
   });
 

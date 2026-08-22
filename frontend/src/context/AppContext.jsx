@@ -25,6 +25,22 @@ export const AppProvider = ({ children }) => {
   const [payrolls, setPayrolls] = useState([]);
   const [company, setCompany] = useState({ name: 'Dayflow HR', logo: null });
   const [toasts, setToasts] = useState([]);
+  
+  // UI States
+  const [isGlobalLoading, setIsGlobalLoading] = useState(false);
+  const [readNotifications, setReadNotifications] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem('dayflow_read_notifications')) || [];
+    } catch {
+      return [];
+    }
+  });
+
+  const markNotificationsAsRead = (ids) => {
+    const newRead = [...new Set([...readNotifications, ...ids])];
+    setReadNotifications(newRead);
+    localStorage.setItem('dayflow_read_notifications', JSON.stringify(newRead));
+  };
 
   // Sync theme
   useEffect(() => {
@@ -49,6 +65,13 @@ export const AppProvider = ({ children }) => {
     return name.substring(0, 2).toUpperCase();
   };
 
+  const generateLoginId = (code, first, last, year) => {
+    const c = code || 'OI';
+    const f = first.substring(0,2).toUpperCase();
+    const l = last.substring(0,2).toUpperCase();
+    return `${c}${year.substring(2)}${f}${l}${Math.floor(Math.random()*1000).toString().padStart(3,'0')}`;
+  };
+
   const checkBackendHealth = useCallback(async () => {
     const isHealthy = await healthApi.check();
     setBackendConnected(isHealthy);
@@ -58,6 +81,7 @@ export const AppProvider = ({ children }) => {
   const refreshBackendData = useCallback(async (user) => {
     const activeUser = user || currentUser;
     if (!activeUser) return;
+    setIsGlobalLoading(true);
 
     try {
       if (activeUser.role === 'admin' || activeUser.role === 'hr') {
@@ -85,6 +109,8 @@ export const AppProvider = ({ children }) => {
       }
     } catch (err) {
       console.warn('Error refreshing backend data:', err);
+    } finally {
+      setIsGlobalLoading(false);
     }
   }, [currentUser]);
 
@@ -110,7 +136,8 @@ export const AppProvider = ({ children }) => {
       if (isMounted) setIsInitializing(false);
     };
     initialize();
-  }, [checkBackendHealth, refreshBackendData]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Auth Methods
   const login = async (email, password) => {
@@ -210,9 +237,11 @@ export const AppProvider = ({ children }) => {
     try {
       if (isSelfEdit) {
         const profilePayload = {
-          mobile: updatedFields.phone,
-          address: updatedFields.address,
-          profilePicture: updatedFields.avatar,
+          profile: {
+            mobile: updatedFields.phone,
+            address: updatedFields.address,
+            profilePicture: updatedFields.avatar,
+          }
         };
         const updated = await usersApi.updateMyProfile(profilePayload);
         setCurrentUser(updated);
@@ -277,6 +306,25 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const overrideAttendance = async (employeeId, date, status) => {
+    try {
+      const updated = await attendanceApi.overrideAttendance(employeeId, date, status);
+      setAttendance(prev => {
+        const existingIndex = prev.findIndex(a => a.employeeId === employeeId && a.date === date);
+        if (existingIndex >= 0) {
+          const newArray = [...prev];
+          newArray[existingIndex] = updated;
+          return newArray;
+        }
+        return [updated, ...prev];
+      });
+      addToast('Attendance Overridden', `Status updated to ${status} for ${date}`, 'success');
+    } catch (err) {
+      addToast('Override Failed', err.message || 'Could not override attendance.', 'danger');
+      throw err;
+    }
+  };
+
   // Leave Methods
   const applyLeave = async ({ leaveType, startDate, endDate, days, reason }) => {
     try {
@@ -333,11 +381,16 @@ export const AppProvider = ({ children }) => {
         updateEmployee,
         checkIn,
         checkOut,
+        overrideAttendance,
         applyLeave,
         reviewLeave,
         updateSalaryStructure,
         refreshBackendData,
-        extractCompanyCode
+        extractCompanyCode,
+        generateLoginId,
+        isGlobalLoading,
+        readNotifications,
+        markNotificationsAsRead
       }}
     >
       {children}

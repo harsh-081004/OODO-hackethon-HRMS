@@ -56,43 +56,7 @@ export const SignIn = ({ onFirstTimeLoginPrompt }) => {
         background: 'linear-gradient(90deg, var(--primary), var(--secondary), var(--accent-purple))'
       }} />
 
-      {/* App / Web Logo Container */}
       <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.75rem',
-          padding: '0.75rem 1.5rem',
-          background: 'var(--bg-hover)',
-          borderRadius: 'var(--radius-lg)',
-          border: '1px solid var(--border-subtle)',
-          marginBottom: '0.85rem'
-        }}>
-          <div style={{
-            width: '2.5rem',
-            height: '2.5rem',
-            borderRadius: '10px',
-            background: 'linear-gradient(135deg, var(--primary) 0%, #875A7B 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 800,
-            fontSize: '1.25rem',
-            boxShadow: '0 4px 10px var(--primary-glow)'
-          }}>
-            {company.code || 'OI'}
-          </div>
-          <div style={{ textAlign: 'left' }}>
-            <div style={{ fontWeight: 800, fontSize: '1.15rem', color: 'var(--text-main)', letterSpacing: '-0.02em' }}>
-              {company.name || 'Dayflow HRMS'}
-            </div>
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Human Resource Management System
-            </div>
-          </div>
-        </div>
-
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Sign In</h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
           Access your employee portal & workforce management

@@ -35,10 +35,11 @@ export const Navbar = () => {
     checkIn,
     checkOut,
     leaveRequests,
-    resetDemoData,
     backendConnected,
     checkBackendHealth,
-    refreshBackendData
+    refreshBackendData,
+    readNotifications,
+    markNotificationsAsRead
   } = useApp();
 
   const [time, setTime] = useState(new Date());
@@ -61,8 +62,24 @@ export const Navbar = () => {
 
   const isCheckedIn = userTodayAttendance && userTodayAttendance.checkIn && !userTodayAttendance.checkOut;
 
-  // Pending leaves count for notifications
-  const pendingLeavesCount = leaveRequests.filter(r => r.status === 'Pending').length;
+  // Notifications logic based on role
+  const isAdmin = currentUser?.role === 'admin';
+  const adminPendingLeaves = leaveRequests.filter(r => r.status === 'Pending' && !readNotifications.includes(r.id || r._id));
+  const employeeProcessedLeaves = leaveRequests.filter(r => 
+    (r.employeeId === currentUser?.id || r.loginId === currentUser?.loginId || r.employeeId === currentUser?._id) && 
+    (r.status === 'Approved' || r.status === 'Rejected') &&
+    !readNotifications.includes(r.id || r._id)
+  );
+
+  const notificationCount = isAdmin ? adminPendingLeaves.length : employeeProcessedLeaves.length;
+  const currentNotificationIds = isAdmin ? adminPendingLeaves.map(r => r.id || r._id) : employeeProcessedLeaves.map(r => r.id || r._id);
+
+  const handleOpenNotifications = () => {
+    setShowNotifications(!showNotifications);
+    if (!showNotifications && currentNotificationIds.length > 0) {
+      markNotificationsAsRead(currentNotificationIds);
+    }
+  };
 
   const handlePingServer = async () => {
     setIsPinging(true);
@@ -98,33 +115,6 @@ export const Navbar = () => {
             <span className="badge badge-primary" style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem' }}>
               Case Point HRMS
             </span>
-
-            {/* Backend Connection Status Badge */}
-            <button
-              onClick={handlePingServer}
-              className={`badge ${backendConnected ? 'badge-success' : 'badge-warning'}`}
-              style={{
-                fontSize: '0.68rem',
-                padding: '0.15rem 0.55rem',
-                cursor: 'pointer',
-                border: 'none',
-                gap: '0.3rem'
-              }}
-              title={backendConnected ? 'Connected to Node.js Backend (:5000). Click to re-sync.' : 'Backend offline or starting. Click to ping server.'}
-            >
-              {backendConnected ? (
-                <>
-                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
-                  <span>API :5000</span>
-                </>
-              ) : (
-                <>
-                  <WifiOff size={10} />
-                  <span>Demo Mode</span>
-                </>
-              )}
-              {isPinging && <RefreshCw size={10} className="animate-spin" />}
-            </button>
           </div>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
             {currentUser?.role === 'admin'
@@ -192,49 +182,18 @@ export const Navbar = () => {
 
       {/* Right: Role Switcher, Notifications, Theme, User Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        {/* Quick Switch Employee/Admin dropdown (Only Admin/CEO can switch) */}
-        {currentUser?.role === 'admin' && (
-          <div style={{ position: 'relative' }}>
-            <select
-              value={currentUser?.id || currentUser?._id}
-              onChange={(e) => {
-                const selected = employees.find(emp => emp.id === e.target.value || emp._id === e.target.value);
-                if (selected) setCurrentUser(selected);
-              }}
-              className="form-select"
-              style={{
-                padding: '0.35rem 0.75rem',
-                fontSize: '0.8rem',
-                fontWeight: 600,
-                width: 'auto',
-                cursor: 'pointer',
-                borderColor: 'var(--border-subtle)',
-                borderRadius: 'var(--radius-md)',
-                background: 'var(--bg-hover)'
-              }}
-              title="Fast switch between active user profiles (Admin / CEO Only)"
-            >
-              <optgroup label="Admin: Switch View / Profile">
-                {employees.map(emp => (
-                  <option key={emp.id || emp._id} value={emp.id || emp._id}>
-                    {emp.fullName} ({emp.role === 'admin' ? 'CEO / Executive Admin' : emp.department === 'Human Resources' ? 'HR Employee' : 'Employee'})
-                  </option>
-                ))}
-              </optgroup>
-            </select>
-          </div>
-        )}
+
 
         {/* Notifications */}
         <div style={{ position: 'relative' }}>
           <button
-            onClick={() => setShowNotifications(!showNotifications)}
+            onClick={handleOpenNotifications}
             className="btn-icon btn-secondary"
             style={{ position: 'relative' }}
             title="Notifications"
           >
             <Bell size={18} />
-            {pendingLeavesCount > 0 && (
+            {notificationCount > 0 && (
               <span style={{
                 position: 'absolute',
                 top: '-3px',
@@ -250,7 +209,7 @@ export const Navbar = () => {
                 alignItems: 'center',
                 justifyContent: 'center'
               }}>
-                {pendingLeavesCount}
+                {notificationCount}
               </span>
             )}
           </button>
@@ -270,14 +229,15 @@ export const Navbar = () => {
             >
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem' }}>
                 <strong style={{ fontSize: '0.9rem' }}>Activity Alerts</strong>
-                <span className="badge badge-primary">{pendingLeavesCount} Pending</span>
+                <span className="badge badge-primary">{notificationCount} {isAdmin ? 'Pending' : 'Updates'}</span>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '250px', overflowY: 'auto' }}>
-                {pendingLeavesCount > 0 ? (
+                {notificationCount > 0 ? (
                   <div
                     onClick={() => {
                       setShowNotifications(false);
-                      if (currentUser.role === 'admin') navigate('/leaves');
+                      if (isAdmin) navigate('/leaves');
+                      else navigate('/dashboard');
                     }}
                     style={{
                       padding: '0.75rem',
@@ -287,23 +247,16 @@ export const Navbar = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    <strong>🔔 {pendingLeavesCount} Leave Applications</strong>
-                    <p style={{ color: 'var(--text-muted)', marginTop: '2px' }}>Awaiting HR review and decision</p>
+                    <strong>🔔 {notificationCount} {isAdmin ? 'Leave Applications' : 'Leave Updates'}</strong>
+                    <p style={{ color: 'var(--text-muted)', marginTop: '2px' }}>
+                      {isAdmin ? 'Awaiting HR review and decision' : 'Your recent leave applications have been reviewed'}
+                    </p>
                   </div>
                 ) : (
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textAlign: 'center', padding: '1rem' }}>
                     No pending alerts right now.
                   </div>
                 )}
-                <div style={{
-                  padding: '0.6rem',
-                  borderRadius: 'var(--radius-sm)',
-                  background: 'var(--bg-hover)',
-                  fontSize: '0.78rem'
-                }}>
-                  <CheckCircle2 size={14} color="var(--success)" style={{ display: 'inline', marginRight: '4px' }} />
-                  {backendConnected ? 'Backend API connection active on :5000' : 'Operating in demo sandbox mode'}
-                </div>
               </div>
             </div>
           )}
@@ -387,16 +340,7 @@ export const Navbar = () => {
                 <User size={16} /> My Full Profile
               </button>
 
-              <button
-                onClick={() => {
-                  setShowProfileMenu(false);
-                  resetDemoData();
-                }}
-                className="btn btn-ghost"
-                style={{ width: '100%', justifyContent: 'flex-start', fontSize: '0.85rem', color: 'var(--warning)' }}
-              >
-                <RotateCcw size={16} /> Reset Demo Data
-              </button>
+
 
               <div style={{ borderTop: '1px solid var(--border-subtle)', marginTop: '0.5rem', paddingTop: '0.5rem' }}>
                 <button

@@ -191,37 +191,7 @@ export const Sidebar = () => {
         })}
       </nav>
 
-      {/* Footer Info Card */}
-      <div style={{
-        marginTop: '1rem',
-        padding: '0.85rem',
-        borderRadius: 'var(--radius-md)',
-        background: 'var(--bg-hover)',
-        border: '1px solid var(--border-subtle)',
-        boxShadow: 'var(--shadow-sm)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
-          <Cpu size={13} color="var(--primary)" />
-          <span style={{ fontWeight: 800, fontSize: '0.78rem' }}>Case Point HRMS</span>
-          <span style={{
-            marginLeft: 'auto',
-            display: 'inline-flex', alignItems: 'center', gap: '3px',
-            fontSize: '0.65rem', fontWeight: 700,
-            color: backendConnected ? 'var(--success)' : 'var(--warning)'
-          }}>
-            <span style={{
-              width: '6px', height: '6px', borderRadius: '50%',
-              background: 'currentColor',
-              boxShadow: backendConnected ? '0 0 6px var(--success)' : '0 0 6px var(--warning)'
-            }} />
-            {backendConnected ? 'Live' : 'Demo'}
-          </span>
-        </div>
-        <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', lineHeight: 1.5 }}>
-          v2.0 • {company?.name || 'Odoo India'}<br />
-          Auto Login IDs • Real-time Sync
-        </p>
-      </div>
+
 
       {/* Sign Out Button */}
       <button

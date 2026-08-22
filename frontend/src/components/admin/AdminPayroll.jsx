@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PayslipModal } from './PayslipModal';
 import { EditEmployeeModal } from './EditEmployeeModal';
+import { AddPayrollModal } from './AddPayrollModal';
 import { payrollApi } from '../../services/api';
 import {
   DollarSign,
@@ -23,6 +24,7 @@ export const AdminPayroll = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPayslipEmp, setSelectedPayslipEmp] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [isAddPayrollOpen, setIsAddPayrollOpen] = useState(false);
   const [selectedMonth, setSelectedMonth] = useState('August 2026');
   const [processing, setProcessing] = useState(false);
 
@@ -113,6 +115,13 @@ export const AdminPayroll = () => {
           >
             <Clock size={16} />
             <span>{processing ? 'Processing Batch...' : 'Run Monthly Batch'}</span>
+          </button>
+          <button
+            onClick={() => setIsAddPayrollOpen(true)}
+            className="btn btn-secondary"
+          >
+            <PlusCircle size={16} />
+            <span>Create Manual Payslip</span>
           </button>
           <button
             onClick={() => setSelectedPayslipEmp(employees[0])}
@@ -278,6 +287,14 @@ export const AdminPayroll = () => {
           isOpen={!!editingEmployee}
           onClose={() => setEditingEmployee(null)}
           employee={editingEmployee}
+        />
+      )}
+
+      {/* Add Payroll Modal */}
+      {isAddPayrollOpen && (
+        <AddPayrollModal
+          isOpen={isAddPayrollOpen}
+          onClose={() => setIsAddPayrollOpen(false)}
         />
       )}
     </div>

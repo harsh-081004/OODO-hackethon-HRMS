@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../common/StatCard';
@@ -51,8 +51,12 @@ const RingChart = ({ percent, color, size = 80, strokeWidth = 8, label }) => {
 };
 
 export const AdminDashboard = () => {
-  const { employees, attendance, leaveRequests, company } = useApp();
+  const { employees, attendance, leaveRequests, company, refreshBackendData } = useApp();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    refreshBackendData();
+  }, [refreshBackendData]);
 
   // Only track and display regular employees (exclude Admin)
   const staffEmployees = employees.filter(e => e.role !== 'admin');

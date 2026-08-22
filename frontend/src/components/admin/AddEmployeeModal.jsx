@@ -91,29 +91,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
       title="Onboard New Employee"
       maxWidth="680px"
     >
-      {/* Live System ID Preview Banner */}
-      <div style={{
-        padding: '0.85rem 1.15rem',
-        borderRadius: 'var(--radius-md)',
-        background: 'var(--bg-hover)',
-        border: '1.5px solid var(--border-focus)',
-        marginBottom: '1.25rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
-      }}>
-        <div>
-          <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-            SYSTEM GENERATED LOGIN ID PREVIEW:
-          </div>
-          <div className="font-mono" style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--primary)', marginTop: '2px' }}>
-            {liveLoginId}
-          </div>
-        </div>
-        <span className={`badge ${backendConnected ? 'badge-success' : 'badge-primary'}`}>
-          <Sparkles size={12} /> {backendConnected ? 'Backend Auto-ID' : 'Auto-Formatted'}
-        </span>
-      </div>
+
 
       {errorMessage && (
         <div style={{

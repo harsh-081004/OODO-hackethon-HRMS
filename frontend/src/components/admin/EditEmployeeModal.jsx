@@ -41,6 +41,7 @@ export const EditEmployeeModal = ({ isOpen, onClose, employee }) => {
     updateEmployee(employee.id, {
       firstName: formData.firstName,
       lastName: formData.lastName,
+      fullName: `${formData.firstName} ${formData.lastName}`,
       email: formData.email,
       phone: formData.phone,
       role: formData.role,

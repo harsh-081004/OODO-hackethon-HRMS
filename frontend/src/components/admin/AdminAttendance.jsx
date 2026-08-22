@@ -15,7 +15,7 @@ import {
 } from 'lucide-react';
 
 export const AdminAttendance = () => {
-  const { employees, attendance, setAttendance, addToast } = useApp();
+  const { employees, attendance, overrideAttendance } = useApp();
 
   const [viewType, setViewType] = useState('daily'); // 'daily' | 'weekly'
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
@@ -41,39 +41,13 @@ export const AdminAttendance = () => {
   const currentWeekDays = getWeekDays(selectedDate);
 
   // Manual status change by HR
-  const handleUpdateStatus = (employeeId, date, newStatus) => {
-    setAttendance(prev => {
-      const existingIndex = prev.findIndex(a => a.employeeId === employeeId && a.date === date);
-      if (existingIndex >= 0) {
-        const updated = [...prev];
-        updated[existingIndex] = {
-          ...updated[existingIndex],
-          status: newStatus,
-          checkIn: newStatus === 'Present' ? (updated[existingIndex].checkIn || '09:00 AM') : null,
-          checkOut: newStatus === 'Present' ? (updated[existingIndex].checkOut || '06:00 PM') : null
-        };
-        return updated;
-      } else {
-        const emp = employees.find(e => e.id === employeeId);
-        return [
-          {
-            id: `ATT-${Date.now().toString().slice(-4)}`,
-            employeeId,
-            employeeName: emp?.fullName || 'Employee',
-            loginId: emp?.loginId || 'ID',
-            date,
-            checkIn: newStatus === 'Present' ? '09:00 AM' : null,
-            checkOut: newStatus === 'Present' ? '06:00 PM' : null,
-            status: newStatus,
-            hoursWorked: newStatus === 'Present' ? 9 : 0,
-            device: 'HR Manual Entry'
-          },
-          ...prev
-        ];
-      }
-    });
-
-    addToast('Attendance Updated', `Status marked as ${newStatus} for ${date}`, 'success');
+  const handleUpdateStatus = async (employeeId, date, newStatus) => {
+    try {
+      await overrideAttendance(employeeId, date, newStatus);
+    } catch (error) {
+      console.warn("Failed to update status:", error);
+      // Optional: re-fetch or revert if needed
+    }
   };
 
   // Only regular staff employees (exclude Admin profiles)
@@ -248,8 +222,8 @@ export const AdminAttendance = () => {
                 <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Login ID</th>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Check In</th>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Check Out</th>
-                <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Device / Terminal</th>
-                <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Status</th>
+                <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Work Hours</th>
+                <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Extra hours</th>
                 <th style={{ padding: '0.85rem 1rem', fontWeight: 700, textAlign: 'right' }}>Admin Override</th>
               </tr>
             </thead>
@@ -309,16 +283,20 @@ export const AdminAttendance = () => {
                       )}
                     </td>
 
-                    <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
-                      {record?.device || 'Portal'}
+                    <td style={{ padding: '0.85rem 1rem', fontWeight: 600 }}>
+                      {record?.hoursWorked > 0 ? (
+                        <span>{record.hoursWorked < 10 ? `0${record.hoursWorked.toFixed(2)}` : record.hoursWorked.toFixed(2)}</span>
+                      ) : (
+                        <span style={{ color: 'var(--text-subtle)' }}>--:--</span>
+                      )}
                     </td>
 
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <span className={`badge ${
-                        status === 'Present' ? 'badge-success' : status === 'Half-day' ? 'badge-warning' : status === 'Leave' ? 'badge-info' : 'badge-danger'
-                      }`}>
-                        {status}
-                      </span>
+                    <td style={{ padding: '0.85rem 1rem', fontWeight: 600, color: (record?.extraHours > 0) ? 'var(--primary)' : 'var(--text-subtle)' }}>
+                      {record?.extraHours > 0 ? (
+                        <span>{record.extraHours < 10 ? `0${record.extraHours.toFixed(2)}` : record.extraHours.toFixed(2)}</span>
+                      ) : (
+                        <span>00.00</span>
+                      )}
                     </td>
 
                     <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>

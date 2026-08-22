@@ -26,6 +26,17 @@ const changePassword = catchAsync(async (req, res) => {
   res.send(new ApiResponse(httpStatus.OK, null, 'Password changed successfully'));
 });
 
+const requestPasswordOtp = catchAsync(async (req, res) => {
+  await authService.requestPasswordOtp(req.user.id);
+  res.send(new ApiResponse(httpStatus.OK, null, 'OTP sent to your email successfully'));
+});
+
+const changePasswordWithOtp = catchAsync(async (req, res) => {
+  const { otp, newPassword } = req.body;
+  await authService.changePasswordWithOtp(req.user.id, otp, newPassword);
+  res.send(new ApiResponse(httpStatus.OK, null, 'Password changed successfully using OTP'));
+});
+
 const verifyEmail = catchAsync(async (req, res) => {
   await authService.verifyEmail(req.query.token);
   res.send(new ApiResponse(httpStatus.OK, null, 'Email verified successfully'));
@@ -35,5 +46,7 @@ module.exports = {
   register,
   login,
   changePassword,
+  requestPasswordOtp,
+  changePasswordWithOtp,
   verifyEmail,
 };

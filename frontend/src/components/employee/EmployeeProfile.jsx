@@ -21,6 +21,9 @@ import {
   Sparkles
 } from 'lucide-react';
 
+import { EditEmployeeModal } from '../admin/EditEmployeeModal';
+import { ChangePasswordModal } from './ChangePasswordModal';
+
 export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
   const { currentUser, leaveRequests, attendance, deleteEmployee, updateEmployee, addToast } = useApp();
   const location = useLocation();
@@ -31,6 +34,8 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
 
   const [activeTab, setActiveTab] = useState('personal'); // 'personal' | 'job' | 'salary' | 'documents'
   const [isEditing, setIsEditing] = useState(false);
+  const [isAdminEditOpen, setIsAdminEditOpen] = useState(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState(false);
 
   // Editable fields for employee self-service: phone, address, emergency contact, bloodGroup, avatar
   const [phone, setPhone] = useState(employee?.phone || '');
@@ -38,6 +43,13 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
   const [emergencyContact, setEmergencyContact] = useState(employee?.emergencyContact || '');
   const [bloodGroup, setBloodGroup] = useState(employee?.bloodGroup || 'B+');
   const [avatar, setAvatar] = useState(employee?.avatar || '');
+
+  // Local state for documents
+  const [documents, setDocuments] = useState([
+    { title: 'Employment Contract Agreement', size: '2.4 MB', date: employee?.joiningDate || new Date().toISOString().split('T')[0], status: 'Verified' },
+    { title: 'Identity & Address Verification Proof', size: '1.8 MB', date: employee?.joiningDate || new Date().toISOString().split('T')[0], status: 'Verified' },
+    { title: 'Educational & Degree Certifications', size: '3.1 MB', date: employee?.joiningDate || new Date().toISOString().split('T')[0], status: 'Verified' }
+  ]);
 
   const handleAvatarChange = (e) => {
     const file = e.target.files?.[0];
@@ -169,13 +181,25 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
                 </button>
               </div>
             ) : (
-              <button
-                onClick={() => setIsEditing(true)}
-                className="btn btn-secondary"
-              >
-                <Edit2 size={16} />
-                <span>Edit Contact Info</span>
-              </button>
+              <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+                {isSelf && (
+                  <button
+                    onClick={() => setIsChangePasswordOpen(true)}
+                    className="btn btn-ghost"
+                    style={{ background: 'var(--bg-card)', border: '1px solid var(--border-subtle)' }}
+                  >
+                    <Shield size={16} style={{ color: 'var(--primary)' }} />
+                    <span>Change Password</span>
+                  </button>
+                )}
+                <button
+                  onClick={() => setIsEditing(true)}
+                  className="btn btn-secondary"
+                >
+                  <Edit2 size={16} />
+                  <span>Edit Contact Info</span>
+                </button>
+              </div>
             )}
           </div>
         </div>
@@ -315,9 +339,19 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
         <div className="glass-card animate-fade-in" style={{ padding: '2rem' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Employment & Position Information</h3>
-            <span className="badge badge-primary">
-              <Lock size={12} /> Managed by HR Administration
-            </span>
+            <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+              <span className="badge badge-primary">
+                <Lock size={12} /> Managed by HR Administration
+              </span>
+              {isAdmin && (
+                <button
+                  onClick={() => setIsAdminEditOpen(true)}
+                  className="btn btn-secondary btn-sm"
+                >
+                  <Edit2 size={14} /> Edit Data
+                </button>
+              )}
+            </div>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1.25rem' }}>
@@ -390,9 +424,19 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
             <div>
               <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>Compensation Structure</h3>
-              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                {isAdmin ? 'Full compensation view with editing controls' : 'Read-only monthly payout & deductions'}
-              </p>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                  {isAdmin ? 'Full compensation view with editing controls' : 'Read-only monthly payout & deductions'}
+                </p>
+                {isAdmin && (
+                  <button
+                    onClick={() => setIsAdminEditOpen(true)}
+                    className="btn btn-secondary btn-sm"
+                  >
+                    <Edit2 size={14} /> Edit Pay
+                  </button>
+                )}
+              </div>
             </div>
             <span className="badge badge-success">
               Net Monthly: ₹{net.toLocaleString()}
@@ -451,21 +495,40 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
         </div>
       )}
 
-      {/* TAB CONTENT: Documents */}
       {activeTab === 'documents' && (
         <div className="glass-card animate-fade-in" style={{ padding: '2rem' }}>
-          <h3 style={{ fontSize: '1.2rem', fontWeight: 800, marginBottom: '1rem' }}>
-            Verified Employee Credentials & Files
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+              Verified Employee Credentials & Files
+            </h3>
+            <label className="btn btn-primary btn-sm" style={{ cursor: 'pointer' }}>
+              Upload New Document
+              <input
+                type="file"
+                style={{ display: 'none' }}
+                onChange={(e) => {
+                  const file = e.target.files[0];
+                  if (file) {
+                    setDocuments(prev => [
+                      ...prev,
+                      {
+                        title: file.name,
+                        size: (file.size / 1024 / 1024).toFixed(1) + ' MB',
+                        date: new Date().toISOString().split('T')[0],
+                        status: 'Pending Verification'
+                      }
+                    ]);
+                    addToast('Document Uploaded', 'New document has been added (Demo Mode).', 'success');
+                  }
+                }}
+              />
+            </label>
+          </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '1rem' }}>
-            {[
-              { title: 'Employment Contract Agreement', size: '2.4 MB', date: employee?.joiningDate, status: 'Verified' },
-              { title: 'Identity & Address Verification Proof', size: '1.8 MB', date: employee?.joiningDate, status: 'Verified' },
-              { title: 'Educational & Degree Certifications', size: '3.1 MB', date: employee?.joiningDate, status: 'Verified' }
-            ].map(doc => (
+            {documents.map((doc, idx) => (
               <div
-                key={doc.title}
+                key={idx}
                 style={{
                   padding: '1.1rem',
                   borderRadius: 'var(--radius-md)',
@@ -497,11 +560,28 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
                     {doc.size} • Uploaded {doc.date}
                   </div>
                 </div>
-                <span className="badge badge-success" style={{ fontSize: '0.68rem' }}>{doc.status}</span>
+                <span className={`badge ${doc.status === 'Verified' ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.68rem' }}>{doc.status}</span>
               </div>
             ))}
           </div>
         </div>
+      )}
+
+      {/* Admin Edit Modal */}
+      {isAdminEditOpen && (
+        <EditEmployeeModal
+          isOpen={isAdminEditOpen}
+          onClose={() => setIsAdminEditOpen(false)}
+          employee={employee}
+        />
+      )}
+
+      {/* Change Password Modal */}
+      {isChangePasswordOpen && (
+        <ChangePasswordModal
+          isOpen={isChangePasswordOpen}
+          onClose={() => setIsChangePasswordOpen(false)}
+        />
       )}
     </div>
   );

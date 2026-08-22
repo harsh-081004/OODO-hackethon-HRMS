@@ -875,10 +875,11 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
   z-index: 1000;
-  padding: 1rem;
+  padding: 2rem 1rem;
+  overflow-y: auto;
   animation: fadeIn 0.2s ease-out;
 }
 
@@ -888,8 +889,7 @@ h1, h2, h3, h4, h5, h6 {
   border-radius: var(--radius-xl);
   max-width: 600px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  margin: auto;
   box-shadow: var(--shadow-3d-hover);
   position: relative;
   animation: fadeInUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);

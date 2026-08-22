@@ -339,24 +339,7 @@ export const initialLeaveRequests = [
   }
 ];
 
-export const initialAnnouncements = [
-  {
-    id: "ANN-1",
-    title: "Q3 All-Hands Meeting & Strategy Alignment",
-    content: "Join us this Friday at 4:00 PM IST for our quarterly executive town hall.",
-    date: "2026-08-21",
-    author: "Alexander Vance (CEO)",
-    priority: "High"
-  },
-  {
-    id: "ANN-2",
-    title: "Updated Leave Policy & Annual Carry-Forward",
-    content: "HR has published the revised 2026 leave guidelines. Check the employee portal for details.",
-    date: "2026-08-18",
-    author: "Sarah Jenkins (HR Manager)",
-    priority: "Normal"
-  }
-];
+export const initialAnnouncements = [];
 
 export const departmentList = [
   "Executive Management",

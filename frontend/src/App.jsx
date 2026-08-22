@@ -22,7 +22,7 @@ import { EmployeeLeave } from './components/employee/EmployeeLeave';
 import { EmployeePayroll } from './components/employee/EmployeePayroll';
 
 export const App = () => {
-  const { currentUser } = useApp();
+  const { currentUser, isGlobalLoading } = useApp();
 
   // If no logged in user, show auth screens
   if (!currentUser) {
@@ -38,6 +38,8 @@ export const App = () => {
 
   return (
     <div className="app-container">
+
+
       {/* Top Navbar */}
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
         <Navbar />

@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
 export const Modal = ({ isOpen, onClose, title, children, maxWidth = '620px' }) => {
@@ -12,7 +13,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '620px' }) 
 
   if (!isOpen) return null;
 
-  return (
+  return createPortal(
     <div className="modal-backdrop" onClick={onClose}>
       <div
         className="modal-content"
@@ -24,7 +25,8 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '620px' }) 
           borderBottom: '1px solid var(--border-subtle)',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'space-between'
+          justifyContent: 'space-between',
+          flexShrink: 0
         }}>
           <h3 style={{ fontSize: '1.2rem', fontWeight: 700 }}>{title}</h3>
           <button
@@ -39,6 +41,7 @@ export const Modal = ({ isOpen, onClose, title, children, maxWidth = '620px' }) 
           {children}
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

@@ -73,34 +73,29 @@ export const EmployeeAttendance = () => {
       }}>
         <div className="glass-card" style={{ padding: '1.25rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Today's Punch Status
-          </span>
-          <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '0.2rem', color: isCheckedIn ? 'var(--success)' : 'var(--text-main)' }}>
-            {isCheckedIn ? 'Checked In (Active)' : userTodayAttendance?.checkOut ? 'Completed' : 'Not Punched In'}
-          </div>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            {userTodayAttendance?.checkIn ? `In at ${userTodayAttendance.checkIn}` : 'Standard shift 09:00 AM - 06:00 PM'}
-          </span>
-        </div>
-
-        <div className="glass-card" style={{ padding: '1.25rem' }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Monthly Present Days
+            Count of days present
           </span>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '0.2rem', color: 'var(--primary)' }}>
             21 Days
           </div>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>96.5% compliance</span>
         </div>
 
         <div className="glass-card" style={{ padding: '1.25rem' }}>
           <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-            Average Daily Hours
+            Leaves count
+          </span>
+          <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '0.2rem', color: 'var(--warning)' }}>
+            02 Days
+          </div>
+        </div>
+
+        <div className="glass-card" style={{ padding: '1.25rem' }}>
+          <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            Total working days
           </span>
           <div style={{ fontSize: '1.5rem', fontWeight: 800, marginTop: '0.2rem', color: 'var(--secondary)' }}>
-            8.4 hrs / day
+            23 Days
           </div>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Within standard 8.0 hr goal</span>
         </div>
       </div>
 
@@ -114,10 +109,10 @@ export const EmployeeAttendance = () => {
           <thead>
             <tr style={{ background: 'var(--bg-hover)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
               <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Date</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Punch In</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Punch Out</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Logged Duration</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Device / Terminal</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Check In</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Check Out</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Work Hours</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Extra hours</th>
               <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Status</th>
             </tr>
           </thead>
@@ -153,11 +148,19 @@ export const EmployeeAttendance = () => {
                 </td>
 
                 <td style={{ padding: '0.85rem 1rem', fontWeight: 600 }}>
-                  {att.hoursWorked > 0 ? `${att.hoursWorked} hrs` : att.checkIn ? 'Active shift' : '-'}
+                  {att.hoursWorked > 0 ? (
+                    <span>{att.hoursWorked < 10 ? `0${att.hoursWorked.toFixed(2)}` : att.hoursWorked.toFixed(2)}</span>
+                  ) : (
+                    <span style={{ color: 'var(--text-subtle)' }}>--:--</span>
+                  )}
                 </td>
 
-                <td style={{ padding: '0.85rem 1rem', color: 'var(--text-muted)' }}>
-                  {att.device || 'Web Portal'}
+                <td style={{ padding: '0.85rem 1rem', fontWeight: 600, color: (att.extraHours > 0) ? 'var(--primary)' : 'var(--text-subtle)' }}>
+                  {att.extraHours > 0 ? (
+                    <span>{att.extraHours < 10 ? `0${att.extraHours.toFixed(2)}` : att.extraHours.toFixed(2)}</span>
+                  ) : (
+                    <span>00.00</span>
+                  )}
                 </td>
 
                 <td style={{ padding: '0.85rem 1rem' }}>

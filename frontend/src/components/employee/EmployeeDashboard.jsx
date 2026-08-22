@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../common/StatCard';
 import { PayslipModal } from '../admin/PayslipModal';
+import { initialAnnouncements as announcements } from '../../data/seedData';
 import {
   Clock,
   Play,
@@ -27,11 +28,15 @@ export const EmployeeDashboard = () => {
     checkIn,
     checkOut,
     leaveRequests,
-    announcements,
-    company
+    company,
+    refreshBackendData
   } = useApp();
 
   const navigate = useNavigate();
+
+  useEffect(() => {
+    refreshBackendData();
+  }, [refreshBackendData]);
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showPayslipModal, setShowPayslipModal] = useState(false);
@@ -43,25 +48,73 @@ export const EmployeeDashboard = () => {
 
   const isCheckedIn = userTodayAttendance && userTodayAttendance.checkIn && !userTodayAttendance.checkOut;
 
+  const createDateFromTime = (timeStr) => {
+    const d = new Date();
+    if (!timeStr) return d;
+    // Support ISO strings if backend sends them
+    if (timeStr.includes('T')) return new Date(timeStr);
+    
+    // Support "HH:MM AM/PM"
+    const match = timeStr.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (match) {
+      let [_, hours, mins, mod] = match;
+      hours = parseInt(hours, 10);
+      mins = parseInt(mins, 10);
+      if (hours === 12) hours = 0;
+      if (mod.toUpperCase() === 'PM') hours += 12;
+      d.setHours(hours, mins, 0, 0);
+    }
+    return d;
+  };
+
   // Running punch timer
   useEffect(() => {
     let interval = null;
-    if (isCheckedIn) {
-      interval = setInterval(() => {
-        setElapsedSeconds(prev => prev + 1);
-      }, 1000);
+    if (isCheckedIn && userTodayAttendance?.checkIn) {
+      const checkInTime = createDateFromTime(userTodayAttendance.checkIn).getTime();
+      const updateElapsed = () => {
+        const now = Date.now();
+        const diff = Math.floor((now - checkInTime) / 1000);
+        setElapsedSeconds(diff > 0 ? diff : 0);
+      };
+      updateElapsed(); // set immediately
+      interval = setInterval(updateElapsed, 1000);
     } else {
       setElapsedSeconds(0);
     }
     return () => clearInterval(interval);
-  }, [isCheckedIn]);
+  }, [isCheckedIn, userTodayAttendance?.checkIn]);
 
   const formatTimer = (secs) => {
+    if (isNaN(secs)) return '00:00:00';
     const hrs = Math.floor(secs / 3600);
     const mins = Math.floor((secs % 3600) / 60);
     const s = secs % 60;
     return `${hrs.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
+
+  let shiftDurationStr = '8.5 hrs';
+  if (userTodayAttendance?.checkIn && userTodayAttendance?.checkOut) {
+    const inTime = createDateFromTime(userTodayAttendance.checkIn).getTime();
+    const outTime = createDateFromTime(userTodayAttendance.checkOut).getTime();
+    const diffMs = Math.max(0, outTime - inTime);
+    
+    if (!isNaN(diffMs)) {
+      const totalMins = Math.floor(diffMs / 60000);
+      const hrs = Math.floor(totalMins / 60);
+      const mins = totalMins % 60;
+      
+      if (hrs === 0 && mins === 0) {
+        shiftDurationStr = '< 1 min';
+      } else if (hrs === 0) {
+        shiftDurationStr = `${mins} min${mins !== 1 ? 's' : ''}`;
+      } else if (mins === 0) {
+        shiftDurationStr = `${hrs} hr${hrs !== 1 ? 's' : ''}`;
+      } else {
+        shiftDurationStr = `${hrs} hr${hrs !== 1 ? 's' : ''} ${mins} min${mins !== 1 ? 's' : ''}`;
+      }
+    }
+  }
 
   const userLeaveRequests = leaveRequests.filter(
     r => r.employeeId === currentUser?.id || r.loginId === currentUser?.loginId
@@ -127,7 +180,7 @@ export const EmployeeDashboard = () => {
               {isCheckedIn ? (
                 <span>⏱ {formatTimer(elapsedSeconds)}</span>
               ) : userTodayAttendance?.checkOut ? (
-                <span style={{ color: 'var(--info)', fontSize: '1.2rem' }}>Shift Completed (8.5 hrs)</span>
+                <span style={{ color: 'var(--info)', fontSize: '1.2rem' }}>Shift Completed ({shiftDurationStr})</span>
               ) : (
                 <span style={{ color: 'var(--text-subtle)', fontSize: '1.2rem' }}>Not Punched In</span>
               )}
@@ -165,8 +218,8 @@ export const EmployeeDashboard = () => {
       }}>
         <StatCard
           title="Attendance Rate"
-          value="96.5%"
-          subtitle="This month (21 of 22 days)"
+          value={`${attendance.filter(a => (a.employeeId === currentUser?.id || a.loginId === currentUser?.loginId) && a.status === 'Present').length} Days`}
+          subtitle="Total presence this month"
           icon={Calendar}
           color="var(--success)"
           trend={{ isPositive: true, text: 'On Track' }}

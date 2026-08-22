@@ -28,9 +28,17 @@ const getAllAttendance = catchAsync(async (req, res) => {
   res.send(new ApiResponse(httpStatus.OK, result, 'Attendance fetched successfully'));
 });
 
+const adminOverride = catchAsync(async (req, res) => {
+  const { employeeId } = req.params;
+  const { date, status } = req.body;
+  const attendance = await attendanceService.adminOverride(employeeId, date, status);
+  res.send(new ApiResponse(httpStatus.OK, attendance, 'Attendance overridden successfully'));
+});
+
 module.exports = {
   checkIn,
   checkOut,
   getMyAttendance,
   getAllAttendance,
+  adminOverride,
 };

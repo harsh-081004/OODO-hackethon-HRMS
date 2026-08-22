@@ -25,8 +25,23 @@ const changePassword = {
   }),
 };
 
+const changePasswordWithOtp = {
+  body: z.object({
+    otp: z.string().length(6, 'OTP must be 6 characters'),
+    newPassword: z.string().min(8, 'New password must be at least 8 characters'),
+  }),
+};
+
+const verifyEmail = {
+  query: z.object({
+    token: z.string().min(1, 'Token is required'),
+  }),
+};
+
 module.exports = {
   register,
   login,
   changePassword,
+  changePasswordWithOtp,
+  verifyEmail,
 };

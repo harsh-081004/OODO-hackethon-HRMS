@@ -22,4 +22,8 @@ router
   .route('/check-out')
   .post(auth(), attendanceController.checkOut);
 
+router
+  .route('/:employeeId/override')
+  .patch(auth('admin', 'hr'), validate(attendanceValidation.adminOverride), attendanceController.adminOverride);
+
 module.exports = router;

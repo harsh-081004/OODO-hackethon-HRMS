@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useApp } from '../../context/AppContext';
 import { Modal } from '../common/Modal';
 import {
@@ -14,12 +14,16 @@ import {
 } from 'lucide-react';
 
 export const AdminLeaveApprovals = () => {
-  const { leaveRequests, reviewLeave, employees } = useApp();
+  const { leaveRequests, reviewLeave, employees, refreshBackendData } = useApp();
 
   const [activeFilter, setActiveFilter] = useState('All'); // 'All' | 'Pending' | 'Approved' | 'Rejected'
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [actionType, setActionType] = useState(null); // 'Approved' | 'Rejected'
   const [comments, setComments] = useState('');
+
+  useEffect(() => {
+    refreshBackendData();
+  }, [refreshBackendData]);
 
   const filteredRequests = leaveRequests.filter(r => {
     if (activeFilter === 'All') return true;
@@ -96,13 +100,11 @@ export const AdminLeaveApprovals = () => {
         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.875rem' }}>
           <thead>
             <tr style={{ background: 'var(--bg-hover)', borderBottom: '1px solid var(--border-subtle)', textAlign: 'left' }}>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Employee</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Leave Type</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Duration / Dates</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Days</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Reason / Remarks</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Name</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Start Date</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>End Date</th>
+              <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Time off Type</th>
               <th style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>Status</th>
-              <th style={{ padding: '0.85rem 1rem', fontWeight: 700, textAlign: 'right' }}>Actions</th>
             </tr>
           </thead>
           <tbody>
@@ -128,81 +130,53 @@ export const AdminLeaveApprovals = () => {
                         <img
                           src={emp?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${req.employeeName}`}
                           alt={req.employeeName}
-                          style={{ width: '34px', height: '34px', borderRadius: '10px', objectFit: 'cover' }}
+                          style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover' }}
                         />
-                        <div>
-                          <div style={{ fontWeight: 700 }}>{req.employeeName}</div>
-                          <code className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--primary)' }}>
-                            {req.loginId}
-                          </code>
-                        </div>
+                        <span style={{ fontWeight: 600 }}>{req.employeeName}</span>
                       </div>
                     </td>
 
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <span className={`badge ${
-                        req.leaveType === 'Paid' ? 'badge-primary' : req.leaveType === 'Sick' ? 'badge-warning' : 'badge-info'
-                      }`}>
-                        {req.leaveType} Leave
-                      </span>
+                    <td style={{ padding: '0.85rem 1rem' }}>{req.startDate}</td>
+                    
+                    <td style={{ padding: '0.85rem 1rem' }}>{req.endDate}</td>
+
+                    <td style={{ padding: '0.85rem 1rem', color: 'var(--primary)', fontWeight: 600 }}>
+                      {req.leaveType}
                     </td>
 
                     <td style={{ padding: '0.85rem 1rem' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <Calendar size={14} color="var(--text-subtle)" />
-                        <span>{req.startDate} to {req.endDate}</span>
-                      </div>
-                    </td>
-
-                    <td style={{ padding: '0.85rem 1rem', fontWeight: 700 }}>
-                      {req.days} Day{req.days > 1 ? 's' : ''}
-                    </td>
-
-                    <td style={{ padding: '0.85rem 1rem', maxWidth: '280px' }}>
-                      <div style={{ color: 'var(--text-main)', fontSize: '0.825rem' }}>
-                        "{req.reason}"
-                      </div>
-                      {req.reviewerComments && (
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                          <MessageSquare size={12} color="var(--primary)" />
-                          <span>HR: {req.reviewerComments}</span>
-                        </div>
-                      )}
-                    </td>
-
-                    <td style={{ padding: '0.85rem 1rem' }}>
-                      <span className={`badge ${
-                        req.status === 'Approved' ? 'badge-success' : req.status === 'Rejected' ? 'badge-danger' : 'badge-warning'
-                      }`}>
-                        {req.status}
-                      </span>
-                    </td>
-
-                    <td style={{ padding: '0.85rem 1rem', textAlign: 'right' }}>
                       {req.status === 'Pending' ? (
-                        <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'flex-end' }}>
-                          <button
-                            onClick={() => handleOpenReview(req, 'Approved')}
-                            className="btn btn-success btn-sm"
-                            style={{ padding: '0.35rem 0.65rem' }}
-                            title="Approve Request"
-                          >
-                            <CheckCircle2 size={15} />
-                            <span>Approve</span>
-                          </button>
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
                           <button
                             onClick={() => handleOpenReview(req, 'Rejected')}
-                            className="btn btn-danger btn-sm"
-                            style={{ padding: '0.35rem 0.65rem' }}
-                            title="Reject Request"
-                          >
-                            <XCircle size={15} />
-                            <span>Reject</span>
-                          </button>
+                            style={{ 
+                              width: '24px', height: '14px', 
+                              background: '#ef4444', 
+                              border: 'none', 
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                            title="Reject"
+                          />
+                          <button
+                            onClick={() => handleOpenReview(req, 'Approved')}
+                            style={{ 
+                              width: '24px', height: '14px', 
+                              background: '#10b981', 
+                              border: 'none', 
+                              borderRadius: '3px',
+                              cursor: 'pointer'
+                            }}
+                            title="Approve"
+                          />
                         </div>
                       ) : (
-                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-                          Reviewed
+                        <span style={{ 
+                          color: req.status === 'Approved' ? 'var(--success)' : 'var(--danger)',
+                          fontWeight: 600,
+                          fontSize: '0.85rem'
+                        }}>
+                          {req.status}
                         </span>
                       )}
                     </td>

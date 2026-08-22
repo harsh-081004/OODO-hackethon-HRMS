@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { AddEmployeeModal } from './AddEmployeeModal';
@@ -26,7 +26,7 @@ import {
 } from 'lucide-react';
 
 export const EmployeeManagement = () => {
-  const { employees, company } = useApp();
+  const { employees, addEmployee, updateEmployee, company, currentUser, refreshBackendData } = useApp();
   const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
@@ -37,6 +37,11 @@ export const EmployeeManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [createdCredentials, setCreatedCredentials] = useState(null);
+
+  // Auto-refresh data on component mount
+  useEffect(() => {
+    refreshBackendData();
+  }, [refreshBackendData]);
 
   // Only staff employees (HR and all department staff; exclude CEO/Admin)
   const staffEmployees = employees.filter(emp => emp.role !== 'admin');
@@ -291,16 +296,9 @@ export const EmployeeManagement = () => {
                 <button
                   onClick={() => setEditingEmployee(emp)}
                   className="btn btn-secondary btn-sm"
-                  style={{ flex: 1, fontSize: '0.8rem' }}
+                  style={{ flex: 1 }}
                 >
                   <Edit2 size={14} /> Edit
-                </button>
-                <button
-                  onClick={() => navigate('/profile', { state: { targetEmployee: emp } })}
-                  className="btn btn-secondary btn-sm"
-                  style={{ flex: 1.2, fontSize: '0.8rem' }}
-                >
-                  <Eye size={14} /> Profile
                 </button>
               </div>
             </div>
@@ -368,14 +366,6 @@ export const EmployeeManagement = () => {
                         title="Edit Details"
                       >
                         <Edit2 size={14} />
-                      </button>
-                      <button
-                        onClick={() => navigate('/profile', { state: { targetEmployee: emp } })}
-                        className="btn-icon btn-primary"
-                        style={{ width: '2rem', height: '2rem' }}
-                        title="View Full Profile"
-                      >
-                        <Eye size={14} />
                       </button>
                     </div>
                   </td>

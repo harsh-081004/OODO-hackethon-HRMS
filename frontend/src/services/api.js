@@ -9,24 +9,27 @@ const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
 // Token Management
 export const getStoredToken = () => {
-  return localStorage.getItem('dayflow_token') || null;
+  const match = document.cookie.match(new RegExp('(^| )dayflow_token=([^;]+)'));
+  return match ? match[2] : null;
 };
 
 export const setStoredToken = (token) => {
   if (token) {
-    localStorage.setItem('dayflow_token', token);
+    const expires = new Date(Date.now() + 24 * 60 * 60 * 1000).toUTCString();
+    document.cookie = `dayflow_token=${token}; expires=${expires}; path=/`;
   } else {
-    localStorage.removeItem('dayflow_token');
+    document.cookie = 'dayflow_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
   }
 };
 
 export const clearStoredToken = () => {
-  localStorage.removeItem('dayflow_token');
+  document.cookie = 'dayflow_token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/';
 };
 
 // Create Axios Instance
 const api = axios.create({
   baseURL: API_BASE,
+  timeout: 5000, // Add 5 second timeout so requests don't hang indefinitely
   headers: {
     'Content-Type': 'application/json',
   },
@@ -260,10 +263,18 @@ export const authApi = {
     };
   },
 
-  changePassword: async (oldPassword, newPassword) => {
-    const res = await api.patch('/auth/change-password', { oldPassword, newPassword });
-    return res.data;
+  changePassword: async (data) => {
+    const response = await api.post('/auth/change-password', data);
+    return response.data.data;
   },
+  requestPasswordOtp: async () => {
+    const response = await api.post('/auth/request-password-otp');
+    return response.data;
+  },
+  changePasswordWithOtp: async (data) => {
+    const response = await api.post('/auth/change-password-otp', data);
+    return response.data;
+  }
 };
 
 /**
@@ -330,6 +341,11 @@ export const attendanceApi = {
     const res = await api.get('/attendance', { params });
     const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformAttendanceFromBackend) : [];
+  },
+
+  overrideAttendance: async (employeeId, date, status) => {
+    const res = await api.patch(`/attendance/${employeeId}/override`, { date, status });
+    return transformAttendanceFromBackend(res.data.data);
   },
 };
 
