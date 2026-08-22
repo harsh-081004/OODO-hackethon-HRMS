@@ -39,9 +39,7 @@ export const EmployeeManagement = () => {
   const [createdCredentials, setCreatedCredentials] = useState(null);
 
   // Auto-refresh data on component mount
-  useEffect(() => {
-    refreshBackendData();
-  }, [refreshBackendData]);
+  // Data is fetched globally in AppContext, no need to refetch on every mount
 
   // Only staff employees (HR and all department staff; exclude CEO/Admin)
   const staffEmployees = employees.filter(emp => emp.role !== 'admin');

@@ -11,6 +11,8 @@ if (process.env.SMTP_HOST) {
       user: process.env.SMTP_USERNAME,
       pass: process.env.SMTP_PASSWORD,
     },
+    // Prevent IPv6 ENETUNREACH timeouts on Render
+    family: 4, 
   });
 } else {
   // Fallback to console logging if no SMTP configured

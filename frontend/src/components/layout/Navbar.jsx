@@ -84,9 +84,7 @@ export const Navbar = () => {
   const handlePingServer = async () => {
     setIsPinging(true);
     await checkBackendHealth();
-    if (currentUser) {
-      await refreshBackendData(currentUser);
-    }
+    // Data is fetched globally in AppContext
     setTimeout(() => setIsPinging(false), 500);
   };
 

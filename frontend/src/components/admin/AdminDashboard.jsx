@@ -54,9 +54,7 @@ export const AdminDashboard = () => {
   const { employees, attendance, leaveRequests, company, refreshBackendData } = useApp();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    refreshBackendData();
-  }, [refreshBackendData]);
+  // Data is fetched globally in AppContext, no need to refetch on every mount
 
   // Only track and display regular employees (exclude Admin)
   const staffEmployees = employees.filter(e => e.role !== 'admin');

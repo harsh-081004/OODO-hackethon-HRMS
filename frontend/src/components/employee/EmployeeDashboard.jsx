@@ -34,9 +34,7 @@ export const EmployeeDashboard = () => {
 
   const navigate = useNavigate();
 
-  useEffect(() => {
-    refreshBackendData();
-  }, [refreshBackendData]);
+  // Data is fetched globally in AppContext, no need to refetch on every mount
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showPayslipModal, setShowPayslipModal] = useState(false);

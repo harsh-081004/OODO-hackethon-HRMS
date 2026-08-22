@@ -21,9 +21,7 @@ export const AdminLeaveApprovals = () => {
   const [actionType, setActionType] = useState(null); // 'Approved' | 'Rejected'
   const [comments, setComments] = useState('');
 
-  useEffect(() => {
-    refreshBackendData();
-  }, [refreshBackendData]);
+  // Data is fetched globally in AppContext, no need to refetch on every mount
 
   const filteredRequests = leaveRequests.filter(r => {
     if (activeFilter === 'All') return true;
