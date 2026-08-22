@@ -2,6 +2,7 @@ const httpStatus = require('http-status');
 const { User } = require('../models');
 const ApiError = require('../utils/ApiError');
 const crypto = require('crypto');
+const emailService = require('./email.service');
 
 const createUser = async (userBody) => {
   if (await User.isEmailTaken(userBody.email)) {
@@ -60,17 +61,16 @@ const generateEmployeeId = async (name, companyName = 'Cash Point', dateOfJoinin
   return `${prefix}${sequenceStr}`;
 };
 
-const createEmployee = async (employeeBody) => {
+const createEmployee = async (employeeBody, adminUser) => {
   if (await User.isEmailTaken(employeeBody.email)) {
     throw new ApiError(httpStatus.BAD_REQUEST, 'Email already taken');
   }
 
   const dateOfJoining = employeeBody.privateInfo?.dateOfJoining ? new Date(employeeBody.privateInfo.dateOfJoining) : new Date();
 
-  // We need the admin's company name to generate the ID properly. Let's fetch the first admin's company name.
-  // In a real multi-tenant app, this would be tied to the specific tenant.
-  const admin = await User.findOne({ role: 'admin' });
-  const companyName = admin ? admin.companyName : 'Default Company';
+  // Multi-tenant: tie employee to the admin's company
+  const companyName = adminUser.companyName || 'Default Company';
+  const companyLogo = adminUser.companyLogo;
 
   const employeeId = await generateEmployeeId(employeeBody.name, companyName, dateOfJoining);
   const generatedPassword = crypto.randomBytes(8).toString('hex');
@@ -78,11 +78,19 @@ const createEmployee = async (employeeBody) => {
   const newEmployee = {
     ...employeeBody,
     employeeId,
+    companyName,
+    companyLogo,
+    isEmailVerified: true, // Employees are created by admins, skip email verification
     password: generatedPassword
   };
 
   const user = await User.create(newEmployee);
-  // In a real app, send an email with the generated password here
+  
+  // Send email asynchronously without blocking the response
+  emailService.sendWelcomeEmail(user.email, generatedPassword).catch(err => {
+    console.error('Failed to send welcome email:', err);
+  });
+
   return { user, generatedPassword };
 };
 

@@ -6,8 +6,13 @@ const createPayroll = {
     month: z.number().min(1).max(12),
     year: z.number().min(2000),
     basicSalary: z.number().min(0),
-    allowances: z.number().min(0).optional(),
-    deductions: z.number().min(0).optional(),
+    hra: z.number().min(0).optional(),
+    standardAllowance: z.number().min(0).optional(),
+    performanceBonus: z.number().min(0).optional(),
+    lta: z.number().min(0).optional(),
+    fixedAllowance: z.number().min(0).optional(),
+    pf: z.number().min(0).optional(),
+    professionalTax: z.number().min(0).optional(),
   }),
 };
 
@@ -25,8 +30,13 @@ const updatePayroll = {
   }),
   body: z.object({
     basicSalary: z.number().min(0).optional(),
-    allowances: z.number().min(0).optional(),
-    deductions: z.number().min(0).optional(),
+    hra: z.number().min(0).optional(),
+    standardAllowance: z.number().min(0).optional(),
+    performanceBonus: z.number().min(0).optional(),
+    lta: z.number().min(0).optional(),
+    fixedAllowance: z.number().min(0).optional(),
+    pf: z.number().min(0).optional(),
+    professionalTax: z.number().min(0).optional(),
     status: z.enum(['Pending', 'Paid']).optional(),
   }),
 };

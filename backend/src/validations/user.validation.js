@@ -1,5 +1,27 @@
 const { z } = require('zod');
 
+const salaryComponentSchema = z.object({
+  value: z.number().optional(),
+  percentage: z.number().optional()
+});
+
+const detailedSalaryStructure = z.object({
+  wage: z.number().optional(),
+  components: z.object({
+    basic: salaryComponentSchema.optional(),
+    hra: salaryComponentSchema.optional(),
+    standardAllowance: salaryComponentSchema.optional(),
+    performanceBonus: salaryComponentSchema.optional(),
+    lta: salaryComponentSchema.optional(),
+    fixedAllowance: salaryComponentSchema.optional(),
+  }).optional(),
+  deductions: z.object({
+    pf: salaryComponentSchema.optional(),
+    employerPf: salaryComponentSchema.optional(),
+    professionalTax: z.number().optional(),
+  }).optional(),
+});
+
 const getUser = {
   params: z.object({
     userId: z.string().regex(/^[0-9a-fA-F]{24}$/, 'Invalid user ID'),
@@ -18,9 +40,7 @@ const createUser = {
     privateInfo: z.object({
       dateOfJoining: z.string().optional(),
     }).optional(),
-    salaryStructure: z.object({
-      basic: z.number().optional(),
-    }).optional(),
+    salaryStructure: detailedSalaryStructure.optional(),
   }),
 };
 
@@ -39,11 +59,7 @@ const updateUser = {
       address: z.string().optional(),
       profilePicture: z.string().optional(),
     }).optional(),
-    salaryStructure: z.object({
-      basic: z.number().optional(),
-      allowances: z.number().optional(),
-      deductions: z.number().optional(),
-    }).optional(),
+    salaryStructure: detailedSalaryStructure.optional(),
   }),
 };
 

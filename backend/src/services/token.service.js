@@ -24,7 +24,14 @@ const generateAuthTokens = async (user) => {
   };
 };
 
+const generateVerifyEmailToken = async (user) => {
+  const expires = Math.floor(Date.now() / 1000) + 24 * 60 * 60; // 1 day
+  const verifyEmailToken = generateToken(user.id, expires, 'verifyEmail');
+  return verifyEmailToken;
+};
+
 module.exports = {
   generateToken,
   generateAuthTokens,
+  generateVerifyEmailToken,
 };

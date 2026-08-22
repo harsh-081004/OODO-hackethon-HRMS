@@ -7,6 +7,11 @@ const payrollSchema = new mongoose.Schema(
       ref: 'User',
       required: true,
     },
+    payslipNumber: {
+      type: String,
+      unique: true,
+      required: true,
+    },
     month: {
       type: Number, // 1-12
       required: true,
@@ -15,18 +20,14 @@ const payrollSchema = new mongoose.Schema(
       type: Number,
       required: true,
     },
-    basicSalary: {
-      type: Number,
-      required: true,
-    },
-    allowances: {
-      type: Number,
-      default: 0,
-    },
-    deductions: {
-      type: Number,
-      default: 0,
-    },
+    basicSalary: { type: Number, required: true },
+    hra: { type: Number, default: 0 },
+    standardAllowance: { type: Number, default: 0 },
+    performanceBonus: { type: Number, default: 0 },
+    lta: { type: Number, default: 0 },
+    fixedAllowance: { type: Number, default: 0 },
+    pf: { type: Number, default: 0 },
+    professionalTax: { type: Number, default: 0 },
     netSalary: {
       type: Number,
       required: true,

@@ -66,9 +66,25 @@ const userSchema = new mongoose.Schema(
       }
     },
     salaryStructure: {
-      basic: { type: Number, default: 0 },
-      allowances: { type: Number, default: 0 },
-      deductions: { type: Number, default: 0 },
+      wage: { type: Number, default: 0 },
+      components: {
+        basic: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        hra: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        standardAllowance: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        performanceBonus: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        lta: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        fixedAllowance: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+      },
+      deductions: {
+        pf: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        employerPf: { value: { type: Number, default: 0 }, percentage: { type: Number } },
+        professionalTax: { type: Number, default: 0 },
+      }
+    },
+    leaveBalances: {
+      paid: { type: Number, default: 24 },
+      sick: { type: Number, default: 7 },
+      unpaid: { type: Number, default: 0 }
     },
   },
   {
@@ -97,12 +113,11 @@ userSchema.methods.isPasswordMatch = async function (password) {
   return bcrypt.compare(password, user.password);
 };
 
-userSchema.pre('save', async function (next) {
+userSchema.pre('save', async function () {
   const user = this;
   if (user.isModified('password')) {
     user.password = await bcrypt.hash(user.password, 8);
   }
-  next();
 });
 
 const User = mongoose.model('User', userSchema);

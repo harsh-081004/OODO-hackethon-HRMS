@@ -5,7 +5,9 @@ const applyLeave = {
     leaveType: z.enum(['Paid', 'Sick', 'Unpaid']),
     startDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid start date' }),
     endDate: z.string().refine((val) => !isNaN(Date.parse(val)), { message: 'Invalid end date' }),
+    allocationDays: z.number().min(0.5),
     remarks: z.string().optional(),
+    attachment: z.string().optional(),
   }),
 };
 

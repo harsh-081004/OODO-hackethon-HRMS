@@ -10,5 +10,6 @@ const router = express.Router();
 router.post('/register', upload.single('companyLogo'), validate(authValidation.register), authController.register);
 router.post('/login', validate(authValidation.login), authController.login);
 router.patch('/change-password', auth(), validate(authValidation.changePassword), authController.changePassword);
+router.get('/verify-email', authController.verifyEmail);
 
 module.exports = router;

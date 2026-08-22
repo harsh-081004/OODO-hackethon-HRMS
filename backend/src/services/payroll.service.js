@@ -3,6 +3,21 @@ const { Payroll } = require('../models');
 const ApiError = require('../utils/ApiError');
 
 const createPayroll = async (payrollBody) => {
+  const currentYear = payrollBody.year || new Date().getFullYear();
+  const monthStr = String(payrollBody.month).padStart(2, '0');
+  
+  const prefix = `PS-${currentYear}${monthStr}-`;
+  const lastPayroll = await Payroll.findOne({ payslipNumber: new RegExp(`^${prefix}`) }).sort({ payslipNumber: -1 });
+
+  let sequence = 1;
+  if (lastPayroll && lastPayroll.payslipNumber) {
+    const lastSeq = parseInt(lastPayroll.payslipNumber.split('-')[2], 10);
+    if (!isNaN(lastSeq)) {
+      sequence = lastSeq + 1;
+    }
+  }
+
+  payrollBody.payslipNumber = `${prefix}${String(sequence).padStart(4, '0')}`;
   return Payroll.create(payrollBody);
 };
 

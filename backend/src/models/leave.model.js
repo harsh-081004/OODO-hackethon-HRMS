@@ -20,8 +20,15 @@ const leaveSchema = new mongoose.Schema(
       type: Date,
       required: true,
     },
+    allocationDays: {
+      type: Number,
+      required: true,
+    },
     remarks: {
       type: String,
+    },
+    attachment: {
+      type: String, // URL to certificate
     },
     status: {
       type: String,

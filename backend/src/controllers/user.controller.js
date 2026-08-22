@@ -5,13 +5,16 @@ const ApiError = require('../utils/ApiError');
 const ApiResponse = require('../utils/ApiResponse');
 
 const getUsers = catchAsync(async (req, res) => {
-  const filter = {}; // Extend logic to handle queries
+  const filter = {};
+  if (req.user.role === 'admin' || req.user.role === 'hr') {
+    filter.companyName = req.user.companyName;
+  }
   const result = await userService.queryUsers(filter);
   res.send(new ApiResponse(httpStatus.OK, result, 'Users fetched successfully'));
 });
 
 const createUser = catchAsync(async (req, res) => {
-  const { user, generatedPassword } = await userService.createEmployee(req.body);
+  const { user, generatedPassword } = await userService.createEmployee(req.body, req.user);
   res.status(httpStatus.CREATED).send(
     new ApiResponse(httpStatus.CREATED, { user, generatedPassword }, 'Employee created successfully. Password auto-generated.')
   );
