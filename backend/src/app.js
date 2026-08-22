@@ -25,11 +25,19 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // enable cors
-app.use(cors());
+app.use(cors({
+  origin: config.frontendUrl,
+  optionsSuccessStatus: 200, // some legacy browsers (IE11, various SmartTVs) choke on 204
+}));
 
 
 // v1 api routes
 app.use('/api/v1', routes);
+
+// root route for health checks (Render, etc.)
+app.get('/', (req, res) => {
+  res.status(200).send('Case Point HRMS API is running');
+});
 
 // send back a 404 error for any unknown api request
 app.use((req, res, next) => {
