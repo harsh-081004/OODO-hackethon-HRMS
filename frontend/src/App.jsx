@@ -13,6 +13,7 @@ import { AdminAttendance } from './components/admin/AdminAttendance';
 import { AdminLeaveApprovals } from './components/admin/AdminLeaveApprovals';
 import { AdminPayroll } from './components/admin/AdminPayroll';
 import { AdminReports } from './components/admin/AdminReports';
+import { AdminNotices } from './components/admin/AdminNotices';
 
 // Employee Modules
 import { EmployeeDashboard } from './components/employee/EmployeeDashboard';
@@ -20,6 +21,7 @@ import { EmployeeProfile } from './components/employee/EmployeeProfile';
 import { EmployeeAttendance } from './components/employee/EmployeeAttendance';
 import { EmployeeLeave } from './components/employee/EmployeeLeave';
 import { EmployeePayroll } from './components/employee/EmployeePayroll';
+import { EmployeeNotices } from './components/employee/EmployeeNotices';
 
 export const App = () => {
   const { currentUser, isGlobalLoading } = useApp();
@@ -58,6 +60,7 @@ export const App = () => {
                 <Route path="/leaves" element={<AdminLeaveApprovals />} />
                 <Route path="/payroll" element={<AdminPayroll />} />
                 <Route path="/reports" element={<AdminReports />} />
+                <Route path="/notices" element={<AdminNotices />} />
                 <Route path="/profile" element={<EmployeeProfile />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
@@ -69,6 +72,7 @@ export const App = () => {
                 <Route path="/attendance" element={<EmployeeAttendance />} />
                 <Route path="/leaves" element={<EmployeeLeave />} />
                 <Route path="/payroll" element={<EmployeePayroll />} />
+                <Route path="/notices" element={<EmployeeNotices />} />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
               </Routes>
             )}

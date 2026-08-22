@@ -418,3 +418,41 @@ export const reportsApi = {
     return res.blob();
   },
 };
+
+/**
+ * Notice API
+ */
+export const transformNoticeFromBackend = (n) => {
+  if (!n) return null;
+  return {
+    id: n._id || n.id,
+    _id: n._id || n.id,
+    title: n.title,
+    content: n.content,
+    isActive: n.isActive,
+    author: n.author,
+    createdAt: n.createdAt,
+    updatedAt: n.updatedAt,
+  };
+};
+
+export const noticeApi = {
+  getAllNotices: async (params = {}) => {
+    const res = await api.get('/notices', { params });
+    const list = res.data.data || [];
+    return Array.isArray(list) ? list.map(transformNoticeFromBackend) : [];
+  },
+  createNotice: async (noticeData) => {
+    const res = await api.post('/notices', noticeData);
+    return transformNoticeFromBackend(res.data.data);
+  },
+  updateNotice: async (noticeId, updateData) => {
+    const res = await api.patch(`/notices/${noticeId}`, updateData);
+    return transformNoticeFromBackend(res.data.data);
+  },
+  deleteNotice: async (noticeId) => {
+    await api.delete(`/notices/${noticeId}`);
+    return true;
+  }
+};
+

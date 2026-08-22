@@ -400,7 +400,7 @@ export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
               <input
                 type="text"
                 className="form-input"
-                value="Odoo Infocity Campus / Hybrid"
+                value="Case Point Campus / Hybrid"
                 disabled
               />
             </div>

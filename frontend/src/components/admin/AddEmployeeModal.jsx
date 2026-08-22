@@ -170,7 +170,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
                   id="empEmail"
                   type="email"
                   className="form-input"
-                  placeholder="john.doe@odoo.com"
+                  placeholder="john.doe@casepoint.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

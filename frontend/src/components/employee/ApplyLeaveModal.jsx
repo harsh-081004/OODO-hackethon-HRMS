@@ -3,12 +3,18 @@ import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { Send, Upload } from 'lucide-react';
 
-export const ApplyLeaveModal = ({ isOpen, onClose }) => {
+export const ApplyLeaveModal = ({ isOpen, onClose, initialStartDate, initialEndDate }) => {
   const { currentUser, applyLeave } = useApp();
 
+  // Helper to format Date object to YYYY-MM-DD string for input fields
+  const formatDateForInput = (dateObj) => {
+    if (!dateObj) return new Date().toISOString().split('T')[0];
+    return dateObj.toISOString().split('T')[0];
+  };
+
   const [leaveType, setLeaveType] = useState('Paid'); // 'Paid' | 'Sick' | 'Unpaid' | 'Casual'
-  const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0]);
-  const [endDate, setEndDate] = useState(new Date(Date.now() + 86400000).toISOString().split('T')[0]);
+  const [startDate, setStartDate] = useState(formatDateForInput(initialStartDate));
+  const [endDate, setEndDate] = useState(formatDateForInput(initialEndDate || new Date(Date.now() + 86400000)));
   const [reason, setReason] = useState('');
   const [loading, setLoading] = useState(false);
   const [attachment, setAttachment] = useState(null);

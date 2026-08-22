@@ -6,6 +6,7 @@ import {
   leaveApi,
   payrollApi,
   healthApi,
+  noticeApi,
   getStoredToken,
   clearStoredToken,
 } from '../services/api';
@@ -23,6 +24,7 @@ export const AppProvider = ({ children }) => {
   const [attendance, setAttendance] = useState([]);
   const [leaveRequests, setLeaveRequests] = useState([]);
   const [payrolls, setPayrolls] = useState([]);
+  const [notices, setNotices] = useState([]);
   const [company, setCompany] = useState({ name: 'Dayflow HR', logo: null });
   const [toasts, setToasts] = useState([]);
   
@@ -85,27 +87,31 @@ export const AppProvider = ({ children }) => {
 
     try {
       if (activeUser.role === 'admin' || activeUser.role === 'hr') {
-        const [usersList, attList, leavesList, payList] = await Promise.allSettled([
+        const [usersList, attList, leavesList, payList, noticeList] = await Promise.allSettled([
           usersApi.getAllUsers(),
           attendanceApi.getAllAttendance(),
           leaveApi.getAllLeaves(),
           payrollApi.getAllPayrolls(),
+          noticeApi.getAllNotices(),
         ]);
 
         if (usersList.status === 'fulfilled') setEmployees(usersList.value);
         if (attList.status === 'fulfilled') setAttendance(attList.value);
         if (leavesList.status === 'fulfilled') setLeaveRequests(leavesList.value);
         if (payList.status === 'fulfilled') setPayrolls(payList.value);
+        if (noticeList.status === 'fulfilled') setNotices(noticeList.value);
       } else {
-        const [attList, leavesList, payList] = await Promise.allSettled([
+        const [attList, leavesList, payList, noticeList] = await Promise.allSettled([
           attendanceApi.getMyAttendance(),
           leaveApi.getMyLeaves(),
           payrollApi.getMyPayrolls(),
+          noticeApi.getAllNotices({ isActive: true }),
         ]);
 
         if (attList.status === 'fulfilled') setAttendance(attList.value);
         if (leavesList.status === 'fulfilled') setLeaveRequests(leavesList.value);
         if (payList.status === 'fulfilled') setPayrolls(payList.value);
+        if (noticeList.status === 'fulfilled') setNotices(noticeList.value);
       }
     } catch (err) {
       console.warn('Error refreshing backend data:', err);
@@ -186,6 +192,7 @@ export const AppProvider = ({ children }) => {
     setAttendance([]);
     setLeaveRequests([]);
     setPayrolls([]);
+    setNotices([]);
     addToast('Signed Out', 'You have been safely logged out.', 'info');
   };
 
@@ -354,6 +361,43 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  // Notice Methods
+  const createNotice = async (noticeData) => {
+    try {
+      const res = await noticeApi.createNotice(noticeData);
+      setNotices(prev => [res, ...prev]);
+      addToast('Notice Created', 'Notice successfully broadcasted.', 'success');
+      return { success: true, notice: res };
+    } catch (err) {
+      addToast('Error', err.message || 'Failed to create notice.', 'danger');
+      return { success: false, error: err.message };
+    }
+  };
+
+  const updateNotice = async (noticeId, updateData) => {
+    try {
+      const res = await noticeApi.updateNotice(noticeId, updateData);
+      setNotices(prev => prev.map(n => n.id === noticeId ? res : n));
+      addToast('Notice Updated', 'Notice details saved.', 'success');
+      return { success: true, notice: res };
+    } catch (err) {
+      addToast('Error', err.message || 'Failed to update notice.', 'danger');
+      return { success: false, error: err.message };
+    }
+  };
+
+  const deleteNotice = async (noticeId) => {
+    try {
+      await noticeApi.deleteNotice(noticeId);
+      setNotices(prev => prev.filter(n => n.id !== noticeId));
+      addToast('Notice Deleted', 'Notice removed permanently.', 'info');
+      return { success: true };
+    } catch (err) {
+      addToast('Error', err.message || 'Failed to delete notice.', 'danger');
+      return { success: false, error: err.message };
+    }
+  };
+
   return (
     <AppContext.Provider
       value={{
@@ -370,6 +414,7 @@ export const AppProvider = ({ children }) => {
         attendance,
         leaveRequests,
         payrolls,
+        notices,
         toasts,
         addToast,
         removeToast,
@@ -390,7 +435,10 @@ export const AppProvider = ({ children }) => {
         generateLoginId,
         isGlobalLoading,
         readNotifications,
-        markNotificationsAsRead
+        markNotificationsAsRead,
+        createNotice,
+        updateNotice,
+        deleteNotice
       }}
     >
       {children}

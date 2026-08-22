@@ -12,7 +12,8 @@ import {
   LogOut,
   Sparkles,
   ShieldCheck,
-  Cpu
+  Cpu,
+  Megaphone
 } from 'lucide-react';
 
 const NAV_COLORS = {
@@ -22,6 +23,7 @@ const NAV_COLORS = {
   leaves: '#f59e0b',
   payroll: '#10b981',
   reports: '#9333ea',
+  notices: '#ef4444',
   profile: '#f97316',
 };
 
@@ -41,6 +43,7 @@ export const Sidebar = () => {
     { id: 'leaves',     path: '/leaves',     label: 'Leave Approvals',      icon: PlaneTakeoff, badge: pendingLeavesCount > 0 ? pendingLeavesCount : null },
     { id: 'payroll',    path: '/payroll',    label: 'Payroll Management',   icon: DollarSign },
     { id: 'reports',    path: '/reports',    label: 'Analytics & Reports',  icon: BarChart3 },
+    { id: 'notices',    path: '/notices',    label: 'Notice Board',         icon: Megaphone },
     { id: 'profile',    path: '/profile',    label: 'My Profile',           icon: UserCircle },
   ];
 
@@ -50,6 +53,7 @@ export const Sidebar = () => {
     { id: 'attendance', path: '/attendance', label: 'My Attendance',        icon: CalendarCheck },
     { id: 'leaves',     path: '/leaves',     label: 'Apply for Leave',      icon: PlaneTakeoff },
     { id: 'payroll',    path: '/payroll',    label: 'Salary & Payslips',    icon: DollarSign },
+    { id: 'notices',    path: '/notices',    label: 'Notice Board',         icon: Megaphone },
   ];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;

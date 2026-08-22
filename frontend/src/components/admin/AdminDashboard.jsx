@@ -121,7 +121,7 @@ export const AdminDashboard = () => {
           </div>
           <h2 style={{ fontSize: '1.65rem', fontWeight: 900 }}>
             Welcome back,{' '}
-            <span className="gradient-text">HR Operations</span>
+            <span style={{ color: '#714B67' }}>HR Operations</span>
           </h2>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem', marginTop: '0.2rem' }}>
             {company.name} • {presentToday} of {totalEmployees} personnel present today

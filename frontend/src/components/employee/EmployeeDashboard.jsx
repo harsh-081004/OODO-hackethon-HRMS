@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../common/StatCard';
 import { PayslipModal } from '../admin/PayslipModal';
-import { initialAnnouncements as announcements } from '../../data/seedData';
 import {
   Clock,
   Play,
@@ -29,7 +28,8 @@ export const EmployeeDashboard = () => {
     checkOut,
     leaveRequests,
     company,
-    refreshBackendData
+    refreshBackendData,
+    notices
   } = useApp();
 
   const navigate = useNavigate();
@@ -322,29 +322,35 @@ export const EmployeeDashboard = () => {
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {announcements.map((ann) => (
-              <div
-                key={ann.id}
-                style={{
-                  padding: '1rem',
-                  borderRadius: 'var(--radius-md)',
-                  background: 'var(--bg-hover)',
-                  border: '1px solid var(--border-subtle)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.35rem' }}>
-                  <strong style={{ fontSize: '0.925rem' }}>{ann.title}</strong>
-                  <span className="badge badge-info" style={{ fontSize: '0.68rem' }}>{ann.tag}</span>
-                </div>
-                <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: 1.4, marginBottom: '0.5rem' }}>
-                  {ann.content}
-                </p>
-                <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', display: 'flex', justifyContent: 'space-between' }}>
-                  <span>{ann.author}</span>
-                  <span>{ann.date}</span>
-                </div>
+            {notices.length === 0 ? (
+              <div style={{ padding: '2rem', textAlign: 'center', color: 'var(--text-muted)' }}>
+                No active announcements at the moment.
               </div>
-            ))}
+            ) : (
+              notices.slice(0, 3).map((notice) => (
+                <div
+                  key={notice.id}
+                  style={{
+                    padding: '1rem',
+                    borderRadius: 'var(--radius-md)',
+                    background: 'var(--bg-hover)',
+                    border: '1px solid var(--border-subtle)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.35rem' }}>
+                    <strong style={{ fontSize: '0.925rem' }}>{notice.title}</strong>
+                    <span className="badge badge-info" style={{ fontSize: '0.68rem' }}>Notice</span>
+                  </div>
+                  <p style={{ fontSize: '0.825rem', color: 'var(--text-muted)', lineHeight: 1.4, marginBottom: '0.5rem', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {notice.content}
+                  </p>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--text-subtle)', display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{notice.author?.name || 'HR Admin'}</span>
+                    <span>{new Date(notice.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       </div>

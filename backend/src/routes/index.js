@@ -7,6 +7,7 @@ const attendanceRoute = require('./v1/attendance.route');
 const leaveRoute = require('./v1/leave.route');
 const payrollRoute = require('./v1/payroll.route');
 const reportRoute = require('./v1/report.route');
+const noticeRoute = require('./v1/notice.route');
 
 router.get('/health', (req, res) => {
   res.status(200).send('OK');
@@ -18,5 +19,6 @@ router.use('/attendance', attendanceRoute);
 router.use('/leaves', leaveRoute);
 router.use('/payrolls', payrollRoute);
 router.use('/reports', reportRoute);
+router.use('/notices', noticeRoute);
 
 module.exports = router;

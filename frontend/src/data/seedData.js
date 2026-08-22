@@ -1,11 +1,11 @@
 // Initial seed data for Dayflow HRMS
 export const initialCompany = {
-  name: "Odoo India",
+  name: "Case Point HRMS",
   code: "OI",
   tagline: "Every workday, perfectly aligned.",
   logo: "https://images.unsplash.com/photo-1572021335469-31706a17aaef?w=150&auto=format&fit=crop&q=80",
-  address: "Odoo House, Infocity, Gandhinagar, Gujarat, India",
-  contactEmail: "contact@odoo.com",
+  address: "Case Point House, Infocity, Gandhinagar, Gujarat, India",
+  contactEmail: "contact@casepoint.com",
   phone: "+91 79 4050 0000"
 };
 
@@ -17,7 +17,7 @@ export const initialEmployees = [
     firstName: "Alexander",
     lastName: "Vance",
     fullName: "Alexander Vance",
-    email: "alexander.vance@odoo.com",
+    email: "alexander.vance@casepoint.com",
     role: "admin", // Executive CEO Admin
     phone: "+91 99999 11111",
     joiningDate: "2020-01-01",
@@ -53,7 +53,7 @@ export const initialEmployees = [
     firstName: "Sarah",
     lastName: "Jenkins",
     fullName: "Sarah Jenkins",
-    email: "sarah.jenkins@odoo.com",
+    email: "sarah.jenkins@casepoint.com",
     role: "employee", // HR Employee
     phone: "+91 98765 43210",
     joiningDate: "2021-03-15",
@@ -89,7 +89,7 @@ export const initialEmployees = [
     firstName: "John",
     lastName: "Doe",
     fullName: "John Doe",
-    email: "john.doe@odoo.com",
+    email: "john.doe@casepoint.com",
     role: "employee",
     phone: "+91 98234 56789",
     joiningDate: "2022-06-01",
@@ -125,7 +125,7 @@ export const initialEmployees = [
     firstName: "Priya",
     lastName: "Sharma",
     fullName: "Priya Sharma",
-    email: "priya.sharma@odoo.com",
+    email: "priya.sharma@casepoint.com",
     role: "employee",
     phone: "+91 97123 45678",
     joiningDate: "2023-01-10",
@@ -161,7 +161,7 @@ export const initialEmployees = [
     firstName: "Alex",
     lastName: "Rivera",
     fullName: "Alex Rivera",
-    email: "alex.rivera@odoo.com",
+    email: "alex.rivera@casepoint.com",
     role: "employee",
     phone: "+91 96543 21876",
     joiningDate: "2023-08-20",
@@ -197,7 +197,7 @@ export const initialEmployees = [
     firstName: "Michael",
     lastName: "Scott",
     fullName: "Michael Scott",
-    email: "michael.scott@odoo.com",
+    email: "michael.scott@casepoint.com",
     role: "employee",
     phone: "+91 99887 76655",
     joiningDate: "2024-02-01",

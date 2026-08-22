@@ -3,3 +3,4 @@ module.exports.Attendance = require('./attendance.model');
 module.exports.Leave = require('./leave.model');
 module.exports.Payroll = require('./payroll.model');
 module.exports.Otp = require('./otp.model');
+module.exports.Notice = require('./notice.model');

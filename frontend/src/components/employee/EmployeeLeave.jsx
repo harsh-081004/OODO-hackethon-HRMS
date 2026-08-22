@@ -7,6 +7,9 @@ export const EmployeeLeave = () => {
   const { currentUser, leaveRequests } = useApp();
   const [isApplyOpen, setIsApplyOpen] = useState(false);
 
+  const [selectionStart, setSelectionStart] = useState(null);
+  const [selectionEnd, setSelectionEnd] = useState(null);
+
   const currentYear = new Date().getFullYear();
   const months = [
     'January', 'February', 'March', 'April', 'May', 'June',
@@ -16,17 +19,49 @@ export const EmployeeLeave = () => {
   const getDaysInMonth = (month, year) => new Date(year, month + 1, 0).getDate();
   const getFirstDayOfMonth = (month, year) => new Date(year, month, 1).getDay();
 
+  const handleDateClick = (d, mIndex, year) => {
+    const dateStr = `${year}-${String(mIndex + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dateObj = new Date(dateStr);
+    dateObj.setHours(0, 0, 0, 0);
+
+    if (!selectionStart || (selectionStart && selectionEnd)) {
+      setSelectionStart(dateObj);
+      setSelectionEnd(null);
+    } else if (selectionStart && !selectionEnd) {
+      if (dateObj >= selectionStart) {
+        setSelectionEnd(dateObj);
+      } else {
+        setSelectionStart(dateObj);
+      }
+    }
+  };
+
+  const isSelected = (d, m, y) => {
+    if (!selectionStart) return false;
+    const dateStr = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const dateObj = new Date(dateStr);
+    dateObj.setHours(0, 0, 0, 0);
+
+    if (selectionEnd) {
+      return dateObj >= selectionStart && dateObj <= selectionEnd;
+    }
+    return dateObj.getTime() === selectionStart.getTime();
+  };
+
   // Helper to check if a date is within an approved/pending leave request
   const getLeaveStatusForDate = (day, month, year) => {
     const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
     const dateObj = new Date(dateStr);
+    dateObj.setHours(0, 0, 0, 0);
     
     // Find matching request
     const myRequests = leaveRequests.filter(r => r.employeeId === currentUser?.id || r.loginId === currentUser?.loginId);
     
     for (const req of myRequests) {
       const s = new Date(req.startDate);
+      s.setHours(0, 0, 0, 0);
       const e = new Date(req.endDate);
+      e.setHours(0, 0, 0, 0);
       if (dateObj >= s && dateObj <= e) {
         return { type: req.leaveType, status: req.status };
       }
@@ -51,7 +86,7 @@ export const EmployeeLeave = () => {
           className="btn"
           style={{ background: '#d946ef', color: 'white', fontWeight: 700, padding: '0.4rem 1.25rem', borderRadius: '4px', border: 'none' }}
         >
-          NEW
+          {selectionStart ? 'APPLY FOR SELECTED DATES' : 'NEW'}
         </button>
       </div>
 
@@ -112,6 +147,8 @@ export const EmployeeLeave = () => {
                   let color = 'var(--text-main)';
                   let border = 'none';
 
+                  const selected = isSelected(d, mIndex, currentYear);
+
                   if (leaveStatus) {
                     if (leaveStatus.status === 'Approved') {
                       bgColor = leaveStatus.type === 'Sick' ? '#fbbf24' : '#ef4444'; // specific colors per wireframe
@@ -120,30 +157,47 @@ export const EmployeeLeave = () => {
                       border = '1px solid #38bdf8';
                       color = '#38bdf8';
                     }
+                  } else if (selected) {
+                    bgColor = 'rgba(217, 70, 239, 0.15)'; // #d946ef
+                    color = '#d946ef';
+                    border = '1px solid #d946ef';
                   }
 
                   const isToday = d === new Date().getDate() && mIndex === new Date().getMonth() && currentYear === new Date().getFullYear();
-                  if (isToday && !leaveStatus) {
+                  if (isToday && !leaveStatus && !selected) {
                     bgColor = 'rgba(56, 189, 248, 0.1)';
                     color = '#38bdf8';
                     border = '1px solid #38bdf8';
                   }
 
                   return (
-                    <div key={d} style={{ 
-                      padding: '0.35rem 0', 
-                      borderRadius: '50%',
-                      background: bgColor,
-                      color: color,
-                      border: border,
-                      fontWeight: (leaveStatus || isToday) ? 800 : 500,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      width: '24px',
-                      height: '24px',
-                      margin: '0 auto'
-                    }}>
+                    <div 
+                      key={d} 
+                      onClick={() => handleDateClick(d, mIndex, currentYear)}
+                      style={{ 
+                        padding: '0.35rem 0', 
+                        borderRadius: '50%',
+                        background: bgColor,
+                        color: color,
+                        border: border,
+                        fontWeight: (leaveStatus || isToday || selected) ? 800 : 500,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '24px',
+                        height: '24px',
+                        margin: '0 auto',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s'
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!leaveStatus && !selected) e.currentTarget.style.background = 'var(--bg-hover)';
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!leaveStatus && !selected && !isToday) e.currentTarget.style.background = 'transparent';
+                        if (isToday && !leaveStatus && !selected) e.currentTarget.style.background = 'rgba(56, 189, 248, 0.1)';
+                      }}
+                    >
                       {d}
                     </div>
                   );
@@ -155,7 +209,12 @@ export const EmployeeLeave = () => {
       </div>
 
       {isApplyOpen && (
-        <ApplyLeaveModal isOpen={isApplyOpen} onClose={() => setIsApplyOpen(false)} />
+        <ApplyLeaveModal 
+          isOpen={isApplyOpen} 
+          onClose={() => setIsApplyOpen(false)} 
+          initialStartDate={selectionStart}
+          initialEndDate={selectionEnd || selectionStart}
+        />
       )}
     </div>
   );

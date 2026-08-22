@@ -85,9 +85,6 @@ export const SignIn = ({ onFirstTimeLoginPrompt }) => {
         <div className="form-group">
           <label className="form-label" htmlFor="loginId">
             <span>Corporate Email or Login ID</span>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-              e.g. sarah@odoo.com
-            </span>
           </label>
           <div style={{ position: 'relative' }}>
             <Mail size={18} style={{
@@ -102,7 +99,7 @@ export const SignIn = ({ onFirstTimeLoginPrompt }) => {
               type="text"
               className="form-input"
               style={{ paddingLeft: '2.75rem' }}
-              placeholder="e.g. sarah@odoo.com or OIJODO20220001"
+              placeholder="e.g. sarah@casepoint.com or OIJODO20220001"
               value={loginIdOrEmail}
               onChange={(e) => setLoginIdOrEmail(e.target.value)}
               required

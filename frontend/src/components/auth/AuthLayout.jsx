@@ -135,9 +135,9 @@ export const AuthLayout = () => {
             <h1 className="gradient-text" style={{ fontSize: '1.25rem', fontWeight: 900, lineHeight: 1.1 }}>
               Case Point HRMS
             </h1>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
-              Human Resource Management • Odoo Standard
-            </span>
+            <div style={{ marginTop: '0.2rem', color: 'var(--text-subtle)', fontSize: '0.875rem' }}>
+              Human Resource Management
+            </div>
           </div>
         </div>
 
@@ -195,16 +195,8 @@ export const AuthLayout = () => {
       )}
 
       {/* Footer */}
-      <footer style={{
-        padding: '1rem',
-        textAlign: 'center',
-        fontSize: '0.75rem',
-        color: 'var(--text-subtle)',
-        borderTop: '1px solid var(--border-subtle)',
-        position: 'relative',
-        zIndex: 10
-      }}>
-        Case Point HRMS v2.0 • Powered by Odoo India • Full-Stack Node.js + MongoDB + React
+      <footer style={{ position: 'absolute', bottom: '1.5rem', width: '100%', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.75rem' }}>
+        Case Point HRMS v2.0 • Full-Stack Node.js + MongoDB + React
       </footer>
     </div>
   );

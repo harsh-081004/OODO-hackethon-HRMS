@@ -7,7 +7,7 @@ export const SignUp = () => {
   const { registerCompany, extractCompanyCode } = useApp();
   const navigate = useNavigate();
 
-  const [companyName, setCompanyName] = useState('Odoo India');
+  const [companyName, setCompanyName] = useState('Case Point HRMS');
   const [logo, setLogo] = useState('');
   const [adminName, setAdminName] = useState('');
   const [email, setEmail] = useState('');
@@ -163,7 +163,7 @@ export const SignUp = () => {
                 type="text"
                 className="form-input"
                 style={{ paddingLeft: '2.75rem' }}
-                placeholder="e.g. Odoo India"
+                placeholder="e.g. Case Point"
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 required
@@ -244,7 +244,7 @@ export const SignUp = () => {
                 type="email"
                 className="form-input"
                 style={{ paddingLeft: '2.5rem', fontSize: '0.85rem' }}
-                placeholder="sarah@odoo.com"
+                placeholder="sarah@casepoint.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
