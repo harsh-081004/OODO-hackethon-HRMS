@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../common/StatCard';
 import {
@@ -49,8 +50,9 @@ const RingChart = ({ percent, color, size = 80, strokeWidth = 8, label }) => {
   );
 };
 
-export const AdminDashboard = ({ setActiveTab, onSelectEmployee }) => {
+export const AdminDashboard = () => {
   const { employees, attendance, leaveRequests, company } = useApp();
+  const navigate = useNavigate();
 
   // Only track and display regular employees (exclude Admin)
   const staffEmployees = employees.filter(e => e.role !== 'admin');
@@ -133,10 +135,10 @@ export const AdminDashboard = ({ setActiveTab, onSelectEmployee }) => {
           />
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-            <button onClick={() => setActiveTab('leaves')} className="btn btn-secondary btn-sm">
-              <PlaneTakeoff size={14} /> Leave Requests ({pendingLeaves.length})
+            <button onClick={() => navigate('/leaves')} className="btn btn-secondary btn-sm">
+              Review Leaves
             </button>
-            <button onClick={() => setActiveTab('employees')} className="btn btn-primary btn-sm">
+            <button onClick={() => navigate('/employees')} className="btn btn-primary btn-sm">
               <Users size={14} /> Manage Employees
             </button>
           </div>
@@ -198,7 +200,7 @@ export const AdminDashboard = ({ setActiveTab, onSelectEmployee }) => {
               <h3 style={{ fontSize: '1.05rem', fontWeight: 800 }}>Pending Leave Approvals</h3>
               <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Requires HR decision</p>
             </div>
-            <button onClick={() => setActiveTab('leaves')} className="btn btn-ghost btn-sm" style={{ color: 'var(--primary)', fontWeight: 700 }}>
+            <button onClick={() => navigate('/leaves')} className="btn btn-ghost btn-sm" style={{ color: 'var(--primary)', fontWeight: 700 }}>
               View All <ArrowRight size={13} />
             </button>
           </div>
@@ -235,8 +237,8 @@ export const AdminDashboard = ({ setActiveTab, onSelectEmployee }) => {
                       "{req.reason || req.remarks}"
                     </div>
                   </div>
-                  <button onClick={() => setActiveTab('leaves')} className="btn btn-primary btn-sm" style={{ fontSize: '0.75rem' }}>
-                    Review
+                  <button onClick={() => navigate('/leaves')} className="btn btn-primary btn-sm" style={{ fontSize: '0.75rem' }}>
+                    Review Request
                   </button>
                 </div>
               ))}
@@ -289,8 +291,8 @@ export const AdminDashboard = ({ setActiveTab, onSelectEmployee }) => {
             </div>
             <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Real-time check-in records for {today}</p>
           </div>
-          <button onClick={() => setActiveTab('attendance')} className="btn btn-secondary btn-sm">
-            Full Roster <ArrowRight size={13} />
+          <button onClick={() => navigate('/attendance')} className="btn btn-secondary btn-sm">
+            Detailed Logster <ArrowRight size={13} />
           </button>
         </div>
 

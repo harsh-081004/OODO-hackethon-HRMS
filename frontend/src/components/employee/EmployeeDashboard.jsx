@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { StatCard } from '../common/StatCard';
 import { PayslipModal } from '../admin/PayslipModal';
@@ -19,7 +20,7 @@ import {
   User
 } from 'lucide-react';
 
-export const EmployeeDashboard = ({ setActiveTab }) => {
+export const EmployeeDashboard = () => {
   const {
     currentUser,
     attendance,
@@ -29,6 +30,8 @@ export const EmployeeDashboard = ({ setActiveTab }) => {
     announcements,
     company
   } = useApp();
+
+  const navigate = useNavigate();
 
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [showPayslipModal, setShowPayslipModal] = useState(false);
@@ -201,8 +204,8 @@ export const EmployeeDashboard = ({ setActiveTab }) => {
               <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Status of your time-off requests</p>
             </div>
             <button
-              onClick={() => setActiveTab('leaves')}
-              className="btn btn-primary btn-sm"
+              onClick={() => navigate('/leaves')}
+              className="btn btn-ghost btn-sm"
             >
               Apply Leave <ArrowRight size={14} />
             </button>

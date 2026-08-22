@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Routes, Route, Navigate } from 'react-router-dom';
 import { SignIn } from './SignIn';
 import { SignUp } from './SignUp';
 import { FirstTimePasswordModal } from './FirstTimePasswordModal';
 import { useApp } from '../../context/AppContext';
-import { Moon, Sun, HelpCircle, ShieldCheck, Zap } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 
 // Animated canvas particle mesh
 const ParticleCanvas = () => {
@@ -94,9 +95,7 @@ const ParticleCanvas = () => {
 
 export const AuthLayout = () => {
   const { theme, toggleTheme, company } = useApp();
-  const [isSignUp, setIsSignUp] = useState(false);
   const [firstTimeUser, setFirstTimeUser] = useState(null);
-  const [showSpecDrawer, setShowSpecDrawer] = useState(false);
 
   return (
     <div style={{
@@ -130,27 +129,11 @@ export const AuthLayout = () => {
         zIndex: 10
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
-          {/* 3D Logo Cube */}
-          <div style={{
-            width: '2.6rem', height: '2.6rem',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, var(--primary) 0%, #875A7B 100%)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            color: 'white', fontWeight: 900, fontSize: '1.1rem',
-            boxShadow: '0 4px 16px var(--primary-glow), 0 1px 3px rgba(0,0,0,0.2)',
-            transform: 'perspective(60px) rotateX(5deg) rotateY(-5deg)',
-            transition: 'transform 0.3s ease',
-            cursor: 'default',
-          }}
-          onMouseEnter={e => e.currentTarget.style.transform = 'perspective(60px) rotateX(0deg) rotateY(0deg) scale(1.05)'}
-          onMouseLeave={e => e.currentTarget.style.transform = 'perspective(60px) rotateX(5deg) rotateY(-5deg)'}
-          >
-            {company.code || 'OI'}
-          </div>
+          <img src="/casepoint-logo.png" alt="Case Point" style={{ height: '2.6rem', objectFit: 'contain' }} />
 
           <div>
             <h1 className="gradient-text" style={{ fontSize: '1.25rem', fontWeight: 900, lineHeight: 1.1 }}>
-              Dayflow HRMS
+              Case Point HRMS
             </h1>
             <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
               Human Resource Management • Odoo Standard
@@ -159,13 +142,6 @@ export const AuthLayout = () => {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
-          <button
-            onClick={() => setShowSpecDrawer(!showSpecDrawer)}
-            className="btn btn-secondary btn-sm"
-          >
-            <HelpCircle size={14} color="var(--primary)" />
-            Login ID Guide
-          </button>
           <button onClick={toggleTheme} className="btn-icon" title="Toggle theme">
             {theme === 'dark' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="var(--primary)" />}
           </button>
@@ -186,21 +162,6 @@ export const AuthLayout = () => {
 
         {/* Animated heading */}
         <div style={{ textAlign: 'center', marginBottom: '1.75rem' }} className="animate-fade-in-up">
-          <div style={{
-            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
-            padding: '0.3rem 0.9rem',
-            borderRadius: 'var(--radius-full)',
-            background: 'var(--primary-light)',
-            border: '1px solid var(--primary-glow)',
-            boxShadow: '0 0 20px var(--primary-glow)',
-            marginBottom: '0.75rem',
-            fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)',
-            letterSpacing: '0.06em', textTransform: 'uppercase'
-          }}>
-            <Zap size={12} />
-            Enterprise Workforce Platform
-          </div>
-
           <h2 style={{
             fontSize: '2.25rem',
             fontWeight: 900,
@@ -213,75 +174,16 @@ export const AuthLayout = () => {
           }}>
             Human Resource<br />Management System
           </h2>
-          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
-            {company.tagline || 'Every workday, perfectly aligned.'}
-          </p>
         </div>
 
         {/* Auth Card */}
         <div className="animate-fade-in-up" style={{ animationDelay: '0.1s', width: '100%', display: 'flex', justifyContent: 'center' }}>
-          {isSignUp ? (
-            <SignUp onSwitchToSignIn={() => setIsSignUp(false)} />
-          ) : (
-            <SignIn
-              onSwitchToSignUp={() => setIsSignUp(true)}
-              onFirstTimeLoginPrompt={(user) => setFirstTimeUser(user)}
-            />
-          )}
+          <Routes>
+            <Route path="/" element={<SignIn onFirstTimeLoginPrompt={(user) => setFirstTimeUser(user)} />} />
+            <Route path="/signup" element={<SignUp />} />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </div>
-
-        {/* Spec Drawer */}
-        {showSpecDrawer && (
-          <div className="glass-card animate-fade-in-up" style={{
-            marginTop: '1.75rem',
-            maxWidth: '700px',
-            width: '100%',
-            padding: '1.5rem',
-            border: '1px solid var(--border-focus)',
-            boxShadow: '0 0 30px var(--primary-glow), var(--shadow-xl)'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
-              <ShieldCheck size={20} color="var(--primary)" />
-              <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>
-                Login ID Format & Workflow Specification
-              </h3>
-            </div>
-
-            <div style={{
-              background: 'var(--bg-hover)',
-              padding: '1rem',
-              borderRadius: 'var(--radius-md)',
-              fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '0.84rem',
-              marginBottom: '1rem'
-            }}>
-              <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '0.3rem' }}>
-                Format: [Company Code 2] + [Name 4] + [Year 4] + [Serial 4]
-              </div>
-              <div style={{ color: 'var(--text-muted)' }}>
-                Example: <strong style={{ color: 'var(--text-main)', letterSpacing: '0.05em' }}>OIJODO20220001</strong>
-              </div>
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.7 }}>
-                • <strong>OI</strong> → Odoo India (Company initials)<br />
-                • <strong>JODO</strong> → First 2 chars of First + Last Name (John Doe)<br />
-                • <strong>2022</strong> → Year of joining<br />
-                • <strong>0001</strong> → Sequential serial within that year
-              </div>
-            </div>
-
-            <div style={{
-              background: 'var(--warning-light)',
-              padding: '0.85rem 1rem',
-              borderRadius: 'var(--radius-md)',
-              fontSize: '0.8rem',
-              lineHeight: 1.6,
-              borderLeft: '4px solid var(--warning)'
-            }}>
-              <strong>Note:</strong> Employees are not registered publicly. They are onboarded by an Admin who
-              generates their unique Login ID and temporary password. On first login, they must set a new password.
-            </div>
-          </div>
-        )}
       </main>
 
       {/* First-time password modal */}
@@ -302,7 +204,7 @@ export const AuthLayout = () => {
         position: 'relative',
         zIndex: 10
       }}>
-        Dayflow HRMS v2.0 • Powered by Odoo India • Full-Stack Node.js + MongoDB + React
+        Case Point HRMS v2.0 • Powered by Odoo India • Full-Stack Node.js + MongoDB + React
       </footer>
     </div>
   );

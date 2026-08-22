@@ -14,8 +14,11 @@ const validate = (schema) => (req, res, next) => {
     }
     next();
   } catch (error) {
-    const errorMessage = error.errors.map((details) => details.message).join(', ');
-    return next(new ApiError(httpStatus.BAD_REQUEST, errorMessage));
+    if (error.errors && Array.isArray(error.errors)) {
+      const errorMessage = error.errors.map((details) => details.message).join(', ');
+      return next(new ApiError(httpStatus.BAD_REQUEST, errorMessage));
+    }
+    return next(new ApiError(httpStatus.BAD_REQUEST, error.message || 'Validation Error'));
   }
 };
 

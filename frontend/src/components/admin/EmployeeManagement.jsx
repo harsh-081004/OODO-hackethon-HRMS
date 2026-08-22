@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { AddEmployeeModal } from './AddEmployeeModal';
 import { EditEmployeeModal } from './EditEmployeeModal';
@@ -24,8 +25,9 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export const EmployeeManagement = ({ onSelectEmployee }) => {
-  const { employees, setCurrentUser, currentUser } = useApp();
+export const EmployeeManagement = () => {
+  const { employees, company } = useApp();
+  const navigate = useNavigate();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedDepartment, setSelectedDepartment] = useState('All');
@@ -294,8 +296,8 @@ export const EmployeeManagement = ({ onSelectEmployee }) => {
                   <Edit2 size={14} /> Edit
                 </button>
                 <button
-                  onClick={() => onSelectEmployee && onSelectEmployee(emp)}
-                  className="btn btn-primary btn-sm"
+                  onClick={() => navigate('/profile', { state: { targetEmployee: emp } })}
+                  className="btn btn-secondary btn-sm"
                   style={{ flex: 1.2, fontSize: '0.8rem' }}
                 >
                   <Eye size={14} /> Profile
@@ -368,7 +370,7 @@ export const EmployeeManagement = ({ onSelectEmployee }) => {
                         <Edit2 size={14} />
                       </button>
                       <button
-                        onClick={() => onSelectEmployee && onSelectEmployee(emp)}
+                        onClick={() => navigate('/profile', { state: { targetEmployee: emp } })}
                         className="btn-icon btn-primary"
                         style={{ width: '2rem', height: '2rem' }}
                         title="View Full Profile"

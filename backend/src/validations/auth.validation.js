@@ -7,11 +7,7 @@ const register = {
     email: z.string().email('Invalid email format'),
     phone: z.string().min(1, 'Phone is required'),
     password: z.string().min(8, 'Password must be at least 8 characters'),
-    confirmPassword: z.string().min(1, 'Confirm Password is required'),
-    companyLogo: z.string().url('Invalid URL for logo').optional(),
-  }).refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match",
-    path: ["confirmPassword"],
+    companyLogo: z.any().optional(),
   }),
 };
 

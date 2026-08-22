@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   User,
@@ -20,11 +21,11 @@ import {
   Sparkles
 } from 'lucide-react';
 
-export const EmployeeProfile = ({ targetEmployee }) => {
-  const { currentUser, updateEmployee, addToast } = useApp();
-
-  // If viewed by admin for another employee, use targetEmployee; otherwise currentUser
-  const employee = targetEmployee || currentUser;
+export const EmployeeProfile = ({ targetEmployee: propEmployee }) => {
+  const { currentUser, leaveRequests, attendance, deleteEmployee, updateEmployee, addToast } = useApp();
+  const location = useLocation();
+  const employee = propEmployee || location.state?.targetEmployee || currentUser;
+  
   const isSelf = currentUser?.id === employee?.id;
   const isAdmin = currentUser?.role === 'admin';
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Eye, EyeOff, Lock, Mail, User, ShieldCheck, ArrowRight, Sparkles, Building2, Wifi, WifiOff } from 'lucide-react';
 
-export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
+export const SignIn = ({ onFirstTimeLoginPrompt }) => {
   const { login, company, employees, backendConnected } = useApp();
   const [loginIdOrEmail, setLoginIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -31,13 +32,6 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
       setLoading(false);
       setError(err.message || 'Login request failed.');
     }
-  };
-
-  // Quick 1-click accounts helper
-  const handleQuickLogin = (emp) => {
-    setLoginIdOrEmail(emp.email || emp.loginId);
-    setPassword(emp.password || 'Password@123');
-    login(emp.email || emp.loginId, emp.password || 'Password@123');
   };
 
   return (
@@ -97,12 +91,6 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
               Human Resource Management System
             </div>
           </div>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-          <span className={`badge ${backendConnected ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
-            {backendConnected ? '🟢 Connected to Node.js Backend API (:5000)' : '🟡 Running in Offline Demo Mode'}
-          </span>
         </div>
 
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Sign In</h2>
@@ -223,8 +211,8 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
       {/* Switch to Sign Up link */}
       <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
         Don't have an Account?{' '}
-        <button
-          onClick={onSwitchToSignUp}
+        <Link
+          to="/signup"
           style={{
             background: 'transparent',
             border: 'none',
@@ -235,56 +223,7 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
           }}
         >
           Sign Up
-        </button>
-      </div>
-
-      {/* Demo 1-Click Fast Switcher */}
-      <div style={{
-        marginTop: '1.75rem',
-        paddingTop: '1.25rem',
-        borderTop: '1px dashed var(--border-subtle)',
-        textAlign: 'center'
-      }}>
-        <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '0.4rem',
-          fontSize: '0.75rem',
-          fontWeight: 700,
-          color: 'var(--text-muted)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.05em',
-          marginBottom: '0.75rem'
-        }}>
-          <Sparkles size={14} color="var(--primary)" /> Demo 1-Click Fast Logins
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-          {employees.slice(0, 3).map((emp) => (
-            <button
-              key={emp.id || emp.email}
-              type="button"
-              onClick={() => handleQuickLogin(emp)}
-              className="btn btn-secondary btn-sm"
-              style={{
-                justifyContent: 'space-between',
-                padding: '0.5rem 0.85rem',
-                fontSize: '0.8rem'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: emp.role === 'admin' ? 'var(--accent-purple)' : 'var(--secondary)'
-                }} />
-                <strong>{emp.fullName}</strong> ({emp.role === 'admin' ? 'CEO' : emp.department === 'Human Resources' ? 'HR' : 'Employee'})
-              </div>
-              <code style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>{emp.email || emp.loginId}</code>
-            </button>
-          ))}
-        </div>
+        </Link>
       </div>
     </div>
   );

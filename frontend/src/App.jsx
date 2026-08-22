@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useApp } from './context/AppContext';
 import { AuthLayout } from './components/auth/AuthLayout';
 import { Navbar } from './components/layout/Navbar';
@@ -22,8 +23,6 @@ import { EmployeePayroll } from './components/employee/EmployeePayroll';
 
 export const App = () => {
   const { currentUser } = useApp();
-  const [activeTab, setActiveTab] = useState('dashboard');
-  const [inspectedEmployee, setInspectedEmployee] = useState(null);
 
   // If no logged in user, show auth screens
   if (!currentUser) {
@@ -37,60 +36,39 @@ export const App = () => {
 
   const isAdmin = currentUser.role === 'admin';
 
-  const handleSelectEmployee = (emp) => {
-    setInspectedEmployee(emp);
-    setActiveTab('profile');
-  };
-
-  const handleTabChange = (newTab) => {
-    if (newTab !== 'profile') {
-      setInspectedEmployee(null);
-    }
-    setActiveTab(newTab);
-  };
-
   return (
     <div className="app-container">
       {/* Top Navbar */}
       <div style={{ display: 'flex', flexDirection: 'column', width: '100%' }}>
-        <Navbar activeTab={activeTab} setActiveTab={handleTabChange} />
+        <Navbar />
 
         {/* Body Layout: Sidebar + Main Content */}
         <div style={{ display: 'flex', flex: 1, minHeight: 'calc(100vh - 70px)' }}>
-          <Sidebar activeTab={activeTab} setActiveTab={handleTabChange} />
+          <Sidebar />
 
           <main className="main-content">
             {isAdmin ? (
               // ADMIN ROLE VIEWS
-              <>
-                {activeTab === 'dashboard' && (
-                  <AdminDashboard
-                    setActiveTab={handleTabChange}
-                    onSelectEmployee={handleSelectEmployee}
-                  />
-                )}
-                {activeTab === 'employees' && (
-                  <EmployeeManagement onSelectEmployee={handleSelectEmployee} />
-                )}
-                {activeTab === 'attendance' && <AdminAttendance />}
-                {activeTab === 'leaves' && <AdminLeaveApprovals />}
-                {activeTab === 'payroll' && <AdminPayroll />}
-                {activeTab === 'reports' && <AdminReports />}
-                {activeTab === 'profile' && (
-                  <EmployeeProfile targetEmployee={inspectedEmployee || currentUser} />
-                )}
-              </>
+              <Routes>
+                <Route path="/dashboard" element={<AdminDashboard />} />
+                <Route path="/employees" element={<EmployeeManagement />} />
+                <Route path="/attendance" element={<AdminAttendance />} />
+                <Route path="/leaves" element={<AdminLeaveApprovals />} />
+                <Route path="/payroll" element={<AdminPayroll />} />
+                <Route path="/reports" element={<AdminReports />} />
+                <Route path="/profile" element={<EmployeeProfile />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
             ) : (
               // EMPLOYEE ROLE VIEWS
-              <>
-                {activeTab === 'dashboard' && (
-                  <EmployeeDashboard setActiveTab={handleTabChange} />
-                )}
-                {activeTab === 'profile' && <EmployeeProfile targetEmployee={currentUser} />}
-                {activeTab === 'attendance' && <EmployeeAttendance />}
-                {activeTab === 'leaves' && <EmployeeLeave />}
-                {activeTab === 'payroll' && <EmployeePayroll />}
-              </>
+              <Routes>
+                <Route path="/dashboard" element={<EmployeeDashboard />} />
+                <Route path="/profile" element={<EmployeeProfile />} />
+                <Route path="/attendance" element={<EmployeeAttendance />} />
+                <Route path="/leaves" element={<EmployeeLeave />} />
+                <Route path="/payroll" element={<EmployeePayroll />} />
+                <Route path="*" element={<Navigate to="/dashboard" replace />} />
+              </Routes>
             )}
           </main>
         </div>

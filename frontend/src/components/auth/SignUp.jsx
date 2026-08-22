@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import { Upload, Building2, User, Mail, Phone, Lock, Eye, EyeOff, Check, AlertCircle, Sparkles } from 'lucide-react';
 
-export const SignUp = ({ onSwitchToSignIn }) => {
-  const { registerCompany, extractCompanyCode, backendConnected } = useApp();
+export const SignUp = () => {
+  const { registerCompany, extractCompanyCode } = useApp();
+  const navigate = useNavigate();
 
   const [companyName, setCompanyName] = useState('Odoo India');
   const [logo, setLogo] = useState('');
@@ -65,6 +67,9 @@ export const SignUp = ({ onSwitchToSignIn }) => {
       setLoading(false);
       if (!res.success) {
         setError(res.error || 'Registration failed. Please try again.');
+      } else {
+        // Redirect to sign in page after successful registration
+        navigate('/');
       }
     } catch (err) {
       setLoading(false);
@@ -108,13 +113,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
         }}>
           <Building2 size={20} color="var(--primary)" />
           <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>
-            Dayflow HRMS • Company Registration
-          </span>
-        </div>
-
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
-          <span className={`badge ${backendConnected ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
-            {backendConnected ? '🟢 Live Backend Connected (:5000)' : '🟡 Offline Demo Workspace'}
+            Case Point HRMS • Company Registration
           </span>
         </div>
 
@@ -413,8 +412,8 @@ export const SignUp = ({ onSwitchToSignIn }) => {
       {/* Switch to Sign In */}
       <div style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.9rem', color: 'var(--text-muted)' }}>
         Already have an account?{' '}
-        <button
-          onClick={onSwitchToSignIn}
+        <Link
+          to="/"
           style={{
             background: 'transparent',
             border: 'none',
@@ -425,7 +424,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
           }}
         >
           Sign In
-        </button>
+        </Link>
       </div>
     </div>
   );

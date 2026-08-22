@@ -1,9 +1,11 @@
 /**
  * Dayflow HRMS - Backend API Service Layer
- * Connects frontend directly to Node.js/Express backend API (http://localhost:5000/api/v1)
+ * Connects frontend directly to Node.js/Express backend API
  */
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api/v1';
+import axios from 'axios';
+
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:4000/api/v1';
 
 // Token Management
 export const getStoredToken = () => {
@@ -22,52 +24,36 @@ export const clearStoredToken = () => {
   localStorage.removeItem('dayflow_token');
 };
 
-/**
- * Generic HTTP Request Wrapper
- */
-async function request(endpoint, options = {}) {
-  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
-  const token = getStoredToken();
-
-  const headers = {
+// Create Axios Instance
+const api = axios.create({
+  baseURL: API_BASE,
+  headers: {
     'Content-Type': 'application/json',
-    ...(options.headers || {}),
-  };
+  },
+});
 
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  // Handle FormData if body is FormData
-  if (options.body instanceof FormData) {
-    delete headers['Content-Type'];
-  } else if (options.body && typeof options.body === 'object') {
-    options.body = JSON.stringify(options.body);
-  }
-
-  try {
-    const response = await fetch(url, {
-      ...options,
-      headers,
-    });
-
-    const isJson = response.headers.get('content-type')?.includes('application/json');
-    const data = isJson ? await response.json() : await response.text();
-
-    if (!response.ok) {
-      const errorMessage = data?.message || data?.error || response.statusText || 'Request failed';
-      const error = new Error(errorMessage);
-      error.status = response.status;
-      error.data = data;
-      throw error;
+// Request Interceptor (Inject Token)
+api.interceptors.request.use(
+  (config) => {
+    const token = getStoredToken();
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
     }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
 
-    return data;
-  } catch (error) {
-    console.warn(`[API Request Error] ${options.method || 'GET'} ${url}:`, error.message);
-    throw error;
+// Response Interceptor (Error Handling)
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    console.warn('[API Error]', error.response?.data?.message || error.message);
+    // You can optionally handle 401 unauthorized globally here to log out the user
+    return Promise.reject(error.response?.data || error);
   }
-}
+);
+
 
 /**
  * Data Transformers between Backend Mongoose Models and Frontend State
@@ -80,9 +66,9 @@ export const transformUserFromBackend = (u) => {
   const firstName = nameParts[0] || 'User';
   const lastName = nameParts.slice(1).join(' ') || '';
 
-  const basicSalary = u.salaryStructure?.basic || 75000;
-  const allowances = u.salaryStructure?.allowances || Math.round(basicSalary * 0.4);
-  const deductions = u.salaryStructure?.deductions || Math.round(basicSalary * 0.15);
+  const basicSalary = u.salaryStructure?.basic?.value || u.salaryStructure?.wage || 75000;
+  const hra = u.salaryStructure?.components?.hra?.value || Math.round(basicSalary * 0.4);
+  const deductions = u.salaryStructure?.deductions?.pf?.value || Math.round(basicSalary * 0.15);
 
   const joiningDateRaw = u.privateInfo?.dateOfJoining || u.createdAt;
   const joiningDate = joiningDateRaw
@@ -110,17 +96,17 @@ export const transformUserFromBackend = (u) => {
     joiningDate,
     isFirstLogin: false,
     leaveBalances: {
-      paid: 14,
-      sick: 8,
-      casual: 5,
-      unpaid: 0,
+      paid: u.leaveBalances?.paid ?? 24,
+      sick: u.leaveBalances?.sick ?? 7,
+      casual: u.leaveBalances?.unpaid ?? 0,
+      unpaid: u.leaveBalances?.unpaid ?? 0,
     },
     salary: {
       basic: basicSalary,
-      hra: Math.round(basicSalary * 0.4),
-      specialAllowance: allowances,
-      providentFund: Math.round(basicSalary * 0.12),
-      professionalTax: 2500,
+      hra: hra,
+      specialAllowance: u.salaryStructure?.components?.standardAllowance?.value || 0,
+      providentFund: u.salaryStructure?.deductions?.pf?.value || Math.round(basicSalary * 0.12),
+      professionalTax: u.salaryStructure?.deductions?.professionalTax || 2500,
       incomeTax: deductions,
     },
     salaryStructure: u.salaryStructure,
@@ -160,7 +146,7 @@ export const transformAttendanceFromBackend = (att) => {
     status: att.status || 'Present',
     hoursWorked: att.workHours || (att.checkOut ? 8.5 : 0),
     extraHours: att.extraHours || 0,
-    device: 'Web Portal',
+    device: att.device || 'Web Portal',
   };
 };
 
@@ -173,9 +159,7 @@ export const transformLeaveFromBackend = (l) => {
 
   const start = new Date(l.startDate);
   const end = new Date(l.endDate);
-  const diffTime = end - start;
-  const days = diffTime >= 0 ? Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1 : 1;
-
+  
   const appliedOn = l.createdAt ? new Date(l.createdAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
 
   return {
@@ -188,12 +172,13 @@ export const transformLeaveFromBackend = (l) => {
     leaveType: l.leaveType || 'Paid',
     startDate: !isNaN(start) ? start.toISOString().split('T')[0] : l.startDate,
     endDate: !isNaN(end) ? end.toISOString().split('T')[0] : l.endDate,
-    days,
+    days: l.allocationDays || 1,
     reason: l.remarks || 'Time-off requested',
     status: l.status || 'Pending',
     appliedOn,
     reviewerComments: l.adminComments || null,
     approvedBy: l.approvedBy,
+    attachment: l.attachment || null,
   };
 };
 
@@ -222,6 +207,7 @@ export const transformPayrollFromBackend = (p) => {
     netSalary: p.netSalary || (p.basicSalary + (p.allowances || 0) - (p.deductions || 0)),
     status: p.status || 'Pending',
     paymentDate: p.paymentDate ? new Date(p.paymentDate).toISOString().split('T')[0] : null,
+    payslipNumber: p.payslipNumber,
   };
 };
 
@@ -231,8 +217,8 @@ export const transformPayrollFromBackend = (p) => {
 export const healthApi = {
   check: async () => {
     try {
-      const res = await fetch(`${API_BASE}/health`, { signal: AbortSignal.timeout(3000) });
-      return res.ok;
+      const res = await api.get('/health', { timeout: 3000 });
+      return res.status === 200;
     } catch {
       return false;
     }
@@ -244,40 +230,39 @@ export const healthApi = {
  */
 export const authApi = {
   register: async (registerData) => {
-    const res = await request('/auth/register', {
-      method: 'POST',
-      body: registerData,
+    const res = await api.post('/auth/register', registerData, {
+      headers: {
+        // Important: Use multipart/form-data if you have a file upload (logo)
+        'Content-Type': registerData instanceof FormData ? 'multipart/form-data' : 'application/json',
+      }
     });
-    if (res?.data?.tokens?.access?.token) {
-      setStoredToken(res.data.tokens.access.token);
-    }
+    // We NO LONGER set tokens here because they must verify their email first
     return {
-      user: transformUserFromBackend(res?.data?.user),
-      tokens: res?.data?.tokens,
-      message: res?.message,
+      user: transformUserFromBackend(res.data.data?.user || res.data.data),
+      message: res.data.message,
     };
   },
 
+  verifyEmail: async (token) => {
+    const res = await api.get(`/auth/verify-email?token=${token}`);
+    return res.data;
+  },
+
   login: async (email, password) => {
-    const res = await request('/auth/login', {
-      method: 'POST',
-      body: { email, password },
-    });
-    if (res?.data?.tokens?.access?.token) {
-      setStoredToken(res.data.tokens.access.token);
+    const res = await api.post('/auth/login', { email, password });
+    if (res.data.data?.tokens?.access?.token) {
+      setStoredToken(res.data.data.tokens.access.token);
     }
     return {
-      user: transformUserFromBackend(res?.data?.user),
-      tokens: res?.data?.tokens,
-      message: res?.message,
+      user: transformUserFromBackend(res.data.data?.user),
+      tokens: res.data.data?.tokens,
+      message: res.data.message,
     };
   },
 
   changePassword: async (oldPassword, newPassword) => {
-    return request('/auth/change-password', {
-      method: 'PATCH',
-      body: { oldPassword, newPassword },
-    });
+    const res = await api.patch('/auth/change-password', { oldPassword, newPassword });
+    return res.data;
   },
 };
 
@@ -286,47 +271,38 @@ export const authApi = {
  */
 export const usersApi = {
   getMe: async () => {
-    const res = await request('/users/me');
-    return transformUserFromBackend(res?.data || res);
+    const res = await api.get('/users/me');
+    return transformUserFromBackend(res.data.data);
   },
 
   updateMyProfile: async (profileData) => {
-    const res = await request('/users/me', {
-      method: 'PATCH',
-      body: { profile: profileData },
-    });
-    return transformUserFromBackend(res?.data || res);
+    const res = await api.patch('/users/me', profileData);
+    return transformUserFromBackend(res.data.data);
   },
 
   getAllUsers: async () => {
-    const res = await request('/users');
-    const list = res?.data || res || [];
+    const res = await api.get('/users');
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformUserFromBackend) : [];
   },
 
   getUserById: async (userId) => {
-    const res = await request(`/users/${userId}`);
-    return transformUserFromBackend(res?.data || res);
+    const res = await api.get(`/users/${userId}`);
+    return transformUserFromBackend(res.data.data);
   },
 
   createUser: async (userData) => {
-    const res = await request('/users', {
-      method: 'POST',
-      body: userData,
-    });
+    const res = await api.post('/users', userData);
     return {
-      user: transformUserFromBackend(res?.data?.user || res?.data),
-      generatedPassword: res?.data?.generatedPassword,
-      message: res?.message,
+      user: transformUserFromBackend(res.data.data?.user),
+      generatedPassword: res.data.data?.generatedPassword,
+      message: res.data.message,
     };
   },
 
   updateUser: async (userId, updateData) => {
-    const res = await request(`/users/${userId}`, {
-      method: 'PATCH',
-      body: updateData,
-    });
-    return transformUserFromBackend(res?.data || res);
+    const res = await api.patch(`/users/${userId}`, updateData);
+    return transformUserFromBackend(res.data.data);
   },
 };
 
@@ -334,30 +310,25 @@ export const usersApi = {
  * Attendance API
  */
 export const attendanceApi = {
-  checkIn: async () => {
-    const res = await request('/attendance/check-in', {
-      method: 'POST',
-    });
-    return transformAttendanceFromBackend(res?.data || res);
+  checkIn: async (device) => {
+    const res = await api.post('/attendance/check-in', { device });
+    return transformAttendanceFromBackend(res.data.data);
   },
 
   checkOut: async () => {
-    const res = await request('/attendance/check-out', {
-      method: 'POST',
-    });
-    return transformAttendanceFromBackend(res?.data || res);
+    const res = await api.post('/attendance/check-out');
+    return transformAttendanceFromBackend(res.data.data);
   },
 
   getMyAttendance: async () => {
-    const res = await request('/attendance/me');
-    const list = res?.data || res || [];
+    const res = await api.get('/attendance/me');
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformAttendanceFromBackend) : [];
   },
 
   getAllAttendance: async (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    const res = await request(`/attendance${query ? `?${query}` : ''}`);
-    const list = res?.data || res || [];
+    const res = await api.get('/attendance', { params });
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformAttendanceFromBackend) : [];
   },
 };
@@ -367,32 +338,25 @@ export const attendanceApi = {
  */
 export const leaveApi = {
   applyLeave: async (leaveData) => {
-    const res = await request('/leaves', {
-      method: 'POST',
-      body: leaveData,
-    });
-    return transformLeaveFromBackend(res?.data || res);
+    const res = await api.post('/leaves', leaveData);
+    return transformLeaveFromBackend(res.data.data);
   },
 
   getMyLeaves: async () => {
-    const res = await request('/leaves/me');
-    const list = res?.data || res || [];
+    const res = await api.get('/leaves/me');
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformLeaveFromBackend) : [];
   },
 
   getAllLeaves: async (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    const res = await request(`/leaves${query ? `?${query}` : ''}`);
-    const list = res?.data || res || [];
+    const res = await api.get('/leaves', { params });
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformLeaveFromBackend) : [];
   },
 
   reviewLeave: async (leaveId, status, adminComments = '') => {
-    const res = await request(`/leaves/${leaveId}/approve`, {
-      method: 'PATCH',
-      body: { status, adminComments },
-    });
-    return transformLeaveFromBackend(res?.data || res);
+    const res = await api.patch(`/leaves/${leaveId}/approve`, { status, adminComments });
+    return transformLeaveFromBackend(res.data.data);
   },
 };
 
@@ -401,32 +365,25 @@ export const leaveApi = {
  */
 export const payrollApi = {
   getMyPayrolls: async () => {
-    const res = await request('/payrolls/me');
-    const list = res?.data || res || [];
+    const res = await api.get('/payrolls/me');
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformPayrollFromBackend) : [];
   },
 
   getAllPayrolls: async (params = {}) => {
-    const query = new URLSearchParams(params).toString();
-    const res = await request(`/payrolls${query ? `?${query}` : ''}`);
-    const list = res?.data || res || [];
+    const res = await api.get('/payrolls', { params });
+    const list = res.data.data || [];
     return Array.isArray(list) ? list.map(transformPayrollFromBackend) : [];
   },
 
   createPayroll: async (payrollData) => {
-    const res = await request('/payrolls', {
-      method: 'POST',
-      body: payrollData,
-    });
-    return transformPayrollFromBackend(res?.data || res);
+    const res = await api.post('/payrolls', payrollData);
+    return transformPayrollFromBackend(res.data.data);
   },
 
   updatePayroll: async (payrollId, updateData) => {
-    const res = await request(`/payrolls/${payrollId}`, {
-      method: 'PATCH',
-      body: updateData,
-    });
-    return transformPayrollFromBackend(res?.data || res);
+    const res = await api.patch(`/payrolls/${payrollId}`, updateData);
+    return transformPayrollFromBackend(res.data.data);
   },
 };
 
@@ -445,4 +402,3 @@ export const reportsApi = {
     return res.blob();
   },
 };
-

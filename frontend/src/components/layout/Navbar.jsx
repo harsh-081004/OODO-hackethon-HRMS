@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   Sun,
@@ -21,7 +22,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-export const Navbar = ({ activeTab, setActiveTab }) => {
+export const Navbar = () => {
   const {
     theme,
     toggleTheme,
@@ -44,6 +45,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [isPinging, setIsPinging] = useState(false);
+  const navigate = useNavigate();
 
   // Live digital clock
   useEffect(() => {
@@ -87,28 +89,14 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
     }}>
       {/* Left: Brand & Organization */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{
-          width: '2.4rem',
-          height: '2.4rem',
-          borderRadius: '10px',
-          background: 'linear-gradient(135deg, var(--primary) 0%, #875A7B 100%)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white',
-          fontWeight: 800,
-          fontSize: '1.1rem',
-          boxShadow: '0 4px 10px var(--primary-glow)'
-        }}>
-          {company.code || 'OI'}
-        </div>
+        <img src="/casepoint-logo.png" alt="Case Point" style={{ height: '2.4rem', objectFit: 'contain' }} />
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
             <span style={{ fontWeight: 800, fontSize: '1.05rem', color: 'var(--text-main)' }}>
               {company.name}
             </span>
             <span className="badge badge-primary" style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem' }}>
-              Dayflow HRMS
+              Case Point HRMS
             </span>
 
             {/* Backend Connection Status Badge */}
@@ -289,7 +277,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
                   <div
                     onClick={() => {
                       setShowNotifications(false);
-                      if (currentUser.role === 'admin') setActiveTab('leaves');
+                      if (currentUser.role === 'admin') navigate('/leaves');
                     }}
                     style={{
                       padding: '0.75rem',
@@ -391,7 +379,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
               <button
                 onClick={() => {
                   setShowProfileMenu(false);
-                  setActiveTab('profile');
+                  navigate('/profile');
                 }}
                 className="btn btn-ghost"
                 style={{ width: '100%', justifyContent: 'flex-start', fontSize: '0.85rem' }}

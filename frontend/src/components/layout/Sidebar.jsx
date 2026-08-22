@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
@@ -24,29 +25,31 @@ const NAV_COLORS = {
   profile: '#f97316',
 };
 
-export const Sidebar = ({ activeTab, setActiveTab }) => {
+export const Sidebar = () => {
   const { currentUser, logout, leaveRequests, company, backendConnected } = useApp();
   const isAdmin = currentUser?.role === 'admin';
   const [hoveredItem, setHoveredItem] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
 
   const pendingLeavesCount = leaveRequests.filter(r => r.status === 'Pending').length;
 
   const adminNavItems = [
-    { id: 'dashboard',  label: 'Dashboard',           icon: LayoutDashboard },
-    { id: 'employees',  label: 'Employee Directory',   icon: Users },
-    { id: 'attendance', label: 'Attendance Records',   icon: CalendarCheck },
-    { id: 'leaves',     label: 'Leave Approvals',      icon: PlaneTakeoff, badge: pendingLeavesCount > 0 ? pendingLeavesCount : null },
-    { id: 'payroll',    label: 'Payroll Management',   icon: DollarSign },
-    { id: 'reports',    label: 'Analytics & Reports',  icon: BarChart3 },
-    { id: 'profile',    label: 'My Profile',           icon: UserCircle },
+    { id: 'dashboard',  path: '/dashboard',  label: 'Dashboard',           icon: LayoutDashboard },
+    { id: 'employees',  path: '/employees',  label: 'Employee Directory',   icon: Users },
+    { id: 'attendance', path: '/attendance', label: 'Attendance Records',   icon: CalendarCheck },
+    { id: 'leaves',     path: '/leaves',     label: 'Leave Approvals',      icon: PlaneTakeoff, badge: pendingLeavesCount > 0 ? pendingLeavesCount : null },
+    { id: 'payroll',    path: '/payroll',    label: 'Payroll Management',   icon: DollarSign },
+    { id: 'reports',    path: '/reports',    label: 'Analytics & Reports',  icon: BarChart3 },
+    { id: 'profile',    path: '/profile',    label: 'My Profile',           icon: UserCircle },
   ];
 
   const employeeNavItems = [
-    { id: 'dashboard',  label: 'Overview',             icon: LayoutDashboard },
-    { id: 'profile',    label: 'My Profile',           icon: UserCircle },
-    { id: 'attendance', label: 'My Attendance',        icon: CalendarCheck },
-    { id: 'leaves',     label: 'Apply for Leave',      icon: PlaneTakeoff },
-    { id: 'payroll',    label: 'Salary & Payslips',    icon: DollarSign },
+    { id: 'dashboard',  path: '/dashboard',  label: 'Overview',             icon: LayoutDashboard },
+    { id: 'profile',    path: '/profile',    label: 'My Profile',           icon: UserCircle },
+    { id: 'attendance', path: '/attendance', label: 'My Attendance',        icon: CalendarCheck },
+    { id: 'leaves',     path: '/leaves',     label: 'Apply for Leave',      icon: PlaneTakeoff },
+    { id: 'payroll',    path: '/payroll',    label: 'Salary & Payslips',    icon: DollarSign },
   ];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
@@ -109,14 +112,14 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
       <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: 1 }}>
         {navItems.map((item, index) => {
           const Icon = item.icon;
-          const isActive = activeTab === item.id;
+          const isActive = location.pathname.startsWith(item.path);
           const color = NAV_COLORS[item.id] || 'var(--primary)';
           const isHov = hoveredItem === item.id;
 
           return (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => navigate(item.path)}
               onMouseEnter={() => setHoveredItem(item.id)}
               onMouseLeave={() => setHoveredItem(null)}
               className="animate-fade-in"
@@ -199,7 +202,7 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
           <Cpu size={13} color="var(--primary)" />
-          <span style={{ fontWeight: 800, fontSize: '0.78rem' }}>Dayflow HRMS</span>
+          <span style={{ fontWeight: 800, fontSize: '0.78rem' }}>Case Point HRMS</span>
           <span style={{
             marginLeft: 'auto',
             display: 'inline-flex', alignItems: 'center', gap: '3px',
