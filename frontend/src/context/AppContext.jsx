@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import {
   initialCompany,
   initialEmployees,
@@ -6,6 +6,17 @@ import {
   initialLeaveRequests,
   initialAnnouncements
 } from '../data/seedData';
+import {
+  authApi,
+  usersApi,
+  attendanceApi,
+  leaveApi,
+  payrollApi,
+  healthApi,
+  getStoredToken,
+  clearStoredToken,
+  transformUserFromBackend
+} from '../services/api';
 
 const AppContext = createContext();
 
@@ -14,6 +25,10 @@ export const AppProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
     return localStorage.getItem('dayflow_theme') || 'light';
   });
+
+  // Server Connection Status
+  const [backendConnected, setBackendConnected] = useState(false);
+  const [isInitializing, setIsInitializing] = useState(true);
 
   // Company profile
   const [company, setCompany] = useState(() => {
@@ -30,7 +45,7 @@ export const AppProvider = ({ children }) => {
   // Active Current User
   const [currentUser, setCurrentUser] = useState(() => {
     const saved = localStorage.getItem('dayflow_currentUser');
-    return saved ? JSON.parse(saved) : initialEmployees[0]; // default to Sarah (Admin) for instant preview
+    return saved ? JSON.parse(saved) : null;
   });
 
   // Attendance Records
@@ -44,6 +59,9 @@ export const AppProvider = ({ children }) => {
     const saved = localStorage.getItem('dayflow_leave_requests');
     return saved ? JSON.parse(saved) : initialLeaveRequests;
   });
+
+  // Payroll Records
+  const [payrolls, setPayrolls] = useState([]);
 
   // Announcements
   const [announcements, setAnnouncements] = useState(() => {
@@ -102,8 +120,104 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
+   * Health Check & Backend Status Heartbeat
+   */
+  const checkBackendHealth = useCallback(async () => {
+    const isHealthy = await healthApi.check();
+    setBackendConnected(isHealthy);
+    return isHealthy;
+  }, []);
+
+  /**
+   * Hydrate App Data from Backend
+   */
+  const refreshBackendData = useCallback(async (user) => {
+    const activeUser = user || currentUser;
+    if (!activeUser) return;
+
+    try {
+      if (activeUser.role === 'admin' || activeUser.role === 'hr') {
+        const [usersList, attList, leavesList, payList] = await Promise.allSettled([
+          usersApi.getAllUsers(),
+          attendanceApi.getAllAttendance(),
+          leaveApi.getAllLeaves(),
+          payrollApi.getAllPayrolls(),
+        ]);
+
+        if (usersList.status === 'fulfilled' && usersList.value.length > 0) {
+          setEmployees(usersList.value);
+        }
+        if (attList.status === 'fulfilled' && attList.value.length > 0) {
+          setAttendance(attList.value);
+        }
+        if (leavesList.status === 'fulfilled' && leavesList.value.length > 0) {
+          setLeaveRequests(leavesList.value);
+        }
+        if (payList.status === 'fulfilled') {
+          setPayrolls(payList.value);
+        }
+      } else {
+        const [attList, leavesList, payList] = await Promise.allSettled([
+          attendanceApi.getMyAttendance(),
+          leaveApi.getMyLeaves(),
+          payrollApi.getMyPayrolls(),
+        ]);
+
+        if (attList.status === 'fulfilled' && attList.value.length > 0) {
+          setAttendance(attList.value);
+        }
+        if (leavesList.status === 'fulfilled' && leavesList.value.length > 0) {
+          setLeaveRequests(leavesList.value);
+        }
+        if (payList.status === 'fulfilled') {
+          setPayrolls(payList.value);
+        }
+      }
+    } catch (err) {
+      console.warn('Error refreshing backend data:', err);
+    }
+  }, [currentUser]);
+
+  /**
+   * Initial App Boot
+   */
+  useEffect(() => {
+    let isMounted = true;
+
+    const initialize = async () => {
+      const isHealthy = await checkBackendHealth();
+      const token = getStoredToken();
+
+      if (isHealthy && token) {
+        try {
+          const me = await usersApi.getMe();
+          if (isMounted && me) {
+            setCurrentUser(me);
+            await refreshBackendData(me);
+          }
+        } catch (err) {
+          console.warn('Session verification failed, falling back to local session:', err);
+          clearStoredToken();
+        }
+      }
+
+      if (isMounted) {
+        setIsInitializing(false);
+      }
+    };
+
+    initialize();
+
+    // Check health periodically
+    const healthInterval = setInterval(checkBackendHealth, 15000);
+    return () => {
+      isMounted = false;
+      clearInterval(healthInterval);
+    };
+  }, [checkBackendHealth, refreshBackendData]);
+
+  /**
    * Generates Company Code (2 letters) from Company Name
-   * Example: "Odoo India" -> "OI", "Google" -> "GO"
    */
   const extractCompanyCode = (companyName) => {
     if (!companyName) return 'OI';
@@ -115,9 +229,7 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
-   * System Login ID Generator according to exact diagram specs:
-   * Format: [CompanyCode (2 letters)][First 2 of First name + First 2 of Last name][Year of Joining (4 digits)][Serial Number (4 digits)]
-   * Example: OIJODO20220001
+   * System Login ID Generator
    */
   const generateLoginId = (compCode, firstName, lastName, joiningYear) => {
     const cCode = (compCode || company.code || 'OI').toUpperCase().substring(0, 2);
@@ -126,7 +238,6 @@ export const AppProvider = ({ children }) => {
     const namePart = (fPart + lPart).padEnd(4, 'X');
     const year = joiningYear ? String(joiningYear).substring(0, 4) : new Date().getFullYear().toString();
     
-    // Calculate serial number for that year
     const sameYearEmployees = employees.filter(e => {
       const eYear = e.joiningDate ? e.joiningDate.substring(0, 4) : '';
       return eYear === year;
@@ -147,10 +258,45 @@ export const AppProvider = ({ children }) => {
   /**
    * Sign In Handler
    */
-  const login = (loginIdOrEmail, password) => {
-    const identifier = loginIdOrEmail.trim().toLowerCase();
+  const login = async (emailOrLoginId, password) => {
+    const identifier = (emailOrLoginId || '').trim();
+
+    // Try backend authentication if server is connected
+    if (backendConnected) {
+      try {
+        // Backend expects valid email format
+        let loginEmail = identifier;
+        if (!loginEmail.includes('@')) {
+          // If user provided Login ID, find corresponding email from known registry
+          const matched = employees.find(
+            e => e.loginId?.toLowerCase() === identifier.toLowerCase() || e.employeeId?.toLowerCase() === identifier.toLowerCase()
+          );
+          if (matched && matched.email) {
+            loginEmail = matched.email;
+          }
+        }
+
+        const res = await authApi.login(loginEmail, password);
+        if (res?.user) {
+          setCurrentUser(res.user);
+          addToast('Welcome Back', `Logged in as ${res.user.fullName} (${res.user.role === 'admin' ? 'HR / Admin' : 'Employee'})`, 'success');
+          await refreshBackendData(res.user);
+          return { success: true, user: res.user };
+        }
+      } catch (backendError) {
+        console.warn('Backend login failed, checking local seed database:', backendError.message);
+        // If backend returns explicit unauthorized, return error
+        if (backendError.status === 401 || backendError.status === 400) {
+          addToast('Authentication Failed', backendError.message || 'Invalid email or password.', 'danger');
+          return { success: false, error: backendError.message };
+        }
+      }
+    }
+
+    // Fallback: Local Seed Database
     const found = employees.find(
-      e => e.loginId.toLowerCase() === identifier || e.email.toLowerCase() === identifier
+      e => e.loginId?.toLowerCase() === identifier.toLowerCase() ||
+           e.email?.toLowerCase() === identifier.toLowerCase()
     );
 
     if (!found) {
@@ -164,14 +310,51 @@ export const AppProvider = ({ children }) => {
     }
 
     setCurrentUser(found);
-    addToast('Welcome Back', `Logged in as ${found.fullName} (${found.role === 'admin' ? 'HR / Admin' : 'Employee'})`, 'success');
+    addToast('Welcome Back (Demo Mode)', `Logged in as ${found.fullName} (${found.role === 'admin' ? 'HR / Admin' : 'Employee'})`, 'success');
     return { success: true, user: found, isFirstLogin: found.isFirstLogin };
   };
 
   /**
-   * Sign Up Handler (Company & Admin Onboarding)
+   * Sign Up Handler (Company & Admin Registration)
    */
-  const registerCompany = ({ companyName, logo, adminName, email, phone, password }) => {
+  const registerCompany = async ({ companyName, logo, adminName, email, phone, password }) => {
+    // 1. Try Backend Registration
+    if (backendConnected) {
+      try {
+        const res = await authApi.register({
+          companyName: companyName.trim(),
+          name: adminName.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          password: password,
+          companyLogo: typeof logo === 'string' && logo.startsWith('http') ? logo : undefined
+        });
+
+        if (res?.user) {
+          const compCode = extractCompanyCode(companyName);
+          const newCompany = {
+            name: companyName,
+            code: compCode,
+            tagline: 'Every workday, perfectly aligned.',
+            logo: logo || initialCompany.logo,
+            contactEmail: email,
+            phone: phone
+          };
+
+          setCompany(newCompany);
+          setCurrentUser(res.user);
+          setEmployees(prev => [res.user, ...prev.filter(e => e.id !== res.user.id)]);
+          addToast('Organization Created!', `Welcome to Dayflow! Admin Employee ID: ${res.user.employeeId || res.user.loginId}`, 'success');
+          await refreshBackendData(res.user);
+          return { success: true, user: res.user };
+        }
+      } catch (err) {
+        console.warn('Backend register error:', err.message);
+        addToast('Registration Note', err.message || 'Could not complete on backend, registering locally.', 'warning');
+      }
+    }
+
+    // 2. Local Fallback Registration
     const compCode = extractCompanyCode(companyName);
     const nameParts = adminName.trim().split(/\s+/);
     const firstName = nameParts[0] || 'Admin';
@@ -192,6 +375,7 @@ export const AppProvider = ({ children }) => {
     const newAdmin = {
       id: `EMP-${Date.now().toString().slice(-4)}`,
       loginId: loginId,
+      employeeId: loginId,
       firstName,
       lastName,
       fullName: adminName,
@@ -230,14 +414,24 @@ export const AppProvider = ({ children }) => {
    * Log out
    */
   const logout = () => {
+    clearStoredToken();
     setCurrentUser(null);
     addToast('Signed Out', 'You have been safely logged out.', 'info');
   };
 
   /**
-   * Update password (e.g. first login or settings)
+   * Update password
    */
-  const updatePassword = (employeeId, newPassword) => {
+  const updatePassword = async (employeeId, newPassword, oldPassword = '') => {
+    if (backendConnected && oldPassword) {
+      try {
+        await authApi.changePassword(oldPassword, newPassword);
+        addToast('Password Updated', 'Your new password is now active on the backend.', 'success');
+      } catch (err) {
+        addToast('Password Update Error', err.message || 'Failed to update backend password', 'danger');
+      }
+    }
+
     setEmployees(prev =>
       prev.map(emp => {
         if (emp.id === employeeId || emp.loginId === employeeId) {
@@ -255,9 +449,69 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
-   * Add New Employee (Admin Only)
+   * Add New Employee (Admin Only) - Connects to POST /api/v1/users
    */
-  const addEmployee = (data) => {
+  const addEmployee = async (data) => {
+    const fullName = `${data.firstName} ${data.lastName}`.trim();
+    const joiningDate = data.joiningDate || new Date().toISOString().split('T')[0];
+
+    // 1. Try Backend Onboarding
+    if (backendConnected) {
+      try {
+        const payload = {
+          name: fullName,
+          email: data.email.trim(),
+          role: data.role || 'employee',
+          profile: {
+            mobile: data.phone || '',
+            department: data.department || 'Engineering',
+          },
+          privateInfo: {
+            dateOfJoining: joiningDate,
+          },
+          salaryStructure: {
+            basic: Number(data.basicSalary || 75000),
+          },
+        };
+
+        const res = await usersApi.createUser(payload);
+        if (res?.user) {
+          const transformed = {
+            ...res.user,
+            designation: data.designation || 'Software Engineer',
+            address: data.address || '',
+            bloodGroup: data.bloodGroup || 'B+',
+            leaveBalances: {
+              paid: Number(data.paidLeave || 14),
+              sick: Number(data.sickLeave || 8),
+              casual: Number(data.casualLeave || 5),
+              unpaid: 0
+            },
+            salary: {
+              basic: Number(data.basicSalary || 75000),
+              hra: Number(data.hra || 30000),
+              specialAllowance: Number(data.specialAllowance || 12000),
+              providentFund: Number(data.providentFund || 9000),
+              professionalTax: 2500,
+              incomeTax: Number(data.incomeTax || 8500)
+            }
+          };
+
+          setEmployees(prev => [transformed, ...prev]);
+          addToast('Employee Onboarded', `Created profile for ${transformed.fullName} with Login ID: ${transformed.loginId}`, 'success');
+          return {
+            success: true,
+            employee: transformed,
+            tempPassword: res.generatedPassword || 'AutoGenerated'
+          };
+        }
+      } catch (err) {
+        console.warn('Backend createUser failed, proceeding with local fallback:', err.message);
+        addToast('Notice', `Backend error: ${err.message}. Adding locally.`, 'warning');
+      }
+    }
+
+    // 2. Local Fallback Onboarding
     const year = data.joiningDate ? data.joiningDate.substring(0, 4) : new Date().getFullYear().toString();
     const loginId = generateLoginId(company.code, data.firstName, data.lastName, year);
     const tempPassword = generateTempPassword();
@@ -265,13 +519,14 @@ export const AppProvider = ({ children }) => {
     const newEmp = {
       id: `EMP-${(employees.length + 1).toString().padStart(3, '0')}`,
       loginId,
+      employeeId: loginId,
       firstName: data.firstName,
       lastName: data.lastName,
-      fullName: `${data.firstName} ${data.lastName}`.trim(),
+      fullName: fullName,
       email: data.email,
       role: data.role || 'employee',
       phone: data.phone || '',
-      joiningDate: data.joiningDate || new Date().toISOString().split('T')[0],
+      joiningDate: joiningDate,
       department: data.department || 'Engineering',
       designation: data.designation || 'Specialist',
       status: 'Active',
@@ -280,7 +535,7 @@ export const AppProvider = ({ children }) => {
       emergencyContact: data.emergencyContact || '',
       bloodGroup: data.bloodGroup || 'B+',
       password: tempPassword,
-      isFirstLogin: true, // Requires first-time password update
+      isFirstLogin: true,
       leaveBalances: {
         paid: Number(data.paidLeave || 14),
         sick: Number(data.sickLeave || 8),
@@ -297,20 +552,57 @@ export const AppProvider = ({ children }) => {
       }
     };
 
-    setEmployees(prev => [...prev, newEmp]);
+    setEmployees(prev => [newEmp, ...prev]);
     addToast('Employee Onboarded', `Created profile for ${newEmp.fullName} with Login ID: ${loginId}`, 'success');
     return { success: true, employee: newEmp, tempPassword };
   };
 
   /**
-   * Edit Employee
+   * Edit Employee Profile (Self-Service or Admin)
    */
-  const updateEmployee = (id, updatedFields, isSelfEdit = false) => {
+  const updateEmployee = async (id, updatedFields, isSelfEdit = false) => {
+    // 1. Try Backend Update
+    if (backendConnected) {
+      try {
+        if (isSelfEdit) {
+          const profilePayload = {
+            mobile: updatedFields.phone || currentUser?.phone,
+            address: updatedFields.address || currentUser?.address,
+            profilePicture: updatedFields.avatar || currentUser?.avatar,
+          };
+          const updated = await usersApi.updateMyProfile(profilePayload);
+          if (updated) {
+            setCurrentUser(prev => ({ ...prev, ...updated, ...updatedFields }));
+          }
+        } else if (id && id.length === 24) {
+          // Valid MongoDB ObjectId
+          const updatePayload = {
+            name: updatedFields.fullName,
+            role: updatedFields.role,
+            profile: {
+              mobile: updatedFields.phone,
+              department: updatedFields.department,
+              address: updatedFields.address,
+              profilePicture: updatedFields.avatar,
+            },
+            salaryStructure: updatedFields.salary ? {
+              basic: updatedFields.salary.basic,
+              allowances: updatedFields.salary.specialAllowance,
+              deductions: updatedFields.salary.incomeTax,
+            } : undefined,
+          };
+          await usersApi.updateUser(id, updatePayload);
+        }
+      } catch (err) {
+        console.warn('Backend updateEmployee error:', err.message);
+      }
+    }
+
+    // 2. Local State Update
     setEmployees(prev =>
       prev.map(emp => {
-        if (emp.id === id || emp.loginId === id) {
+        if (emp.id === id || emp.loginId === id || emp._id === id) {
           if (isSelfEdit) {
-            // Self-service allowed fields only
             return {
               ...emp,
               phone: updatedFields.phone ?? emp.phone,
@@ -320,7 +612,6 @@ export const AppProvider = ({ children }) => {
               bloodGroup: updatedFields.bloodGroup ?? emp.bloodGroup
             };
           }
-          // Admin can edit everything
           return {
             ...emp,
             ...updatedFields,
@@ -333,7 +624,7 @@ export const AppProvider = ({ children }) => {
       })
     );
 
-    if (currentUser && (currentUser.id === id || currentUser.loginId === id)) {
+    if (currentUser && (currentUser.id === id || currentUser.loginId === id || currentUser._id === id)) {
       setCurrentUser(prev => ({
         ...prev,
         ...updatedFields,
@@ -347,13 +638,28 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
-   * Check In Punch
+   * Check In Punch - Connects to POST /api/v1/attendance/check-in
    */
-  const checkIn = (employeeId, device = 'Web Portal') => {
+  const checkIn = async (employeeId, device = 'Web Portal') => {
     const today = new Date().toISOString().split('T')[0];
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-    const emp = employees.find(e => e.id === employeeId || e.loginId === employeeId);
 
+    if (backendConnected && currentUser) {
+      try {
+        const attRec = await attendanceApi.checkIn();
+        if (attRec) {
+          setAttendance(prev => [attRec, ...prev.filter(a => a.date !== today || a.employeeId !== currentUser.id)]);
+          addToast('Checked In (Backend Synced)', `Shift started at ${attRec.checkIn || nowTime}`, 'success');
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend checkIn failed:', err.message);
+        addToast('Check In Notice', err.message || 'Saved punch locally.', 'info');
+      }
+    }
+
+    // Local punch fallback
+    const emp = employees.find(e => e.id === employeeId || e.loginId === employeeId);
     if (!emp) return;
 
     setAttendance(prev => {
@@ -385,13 +691,28 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
-   * Check Out Punch
+   * Check Out Punch - Connects to POST /api/v1/attendance/check-out
    */
-  const checkOut = (employeeId) => {
+  const checkOut = async (employeeId) => {
     const today = new Date().toISOString().split('T')[0];
     const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true });
-    const emp = employees.find(e => e.id === employeeId || e.loginId === employeeId);
 
+    if (backendConnected && currentUser) {
+      try {
+        const attRec = await attendanceApi.checkOut();
+        if (attRec) {
+          setAttendance(prev => prev.map(a => (a.date === today && (a.employeeId === currentUser.id || a.loginId === currentUser.loginId)) ? attRec : a));
+          addToast('Checked Out (Backend Synced)', `Shift concluded at ${attRec.checkOut || nowTime}. Hours logged: ${attRec.hoursWorked}`, 'info');
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend checkOut failed:', err.message);
+        addToast('Check Out Notice', err.message || 'Saved punch locally.', 'info');
+      }
+    }
+
+    // Local punch checkout fallback
+    const emp = employees.find(e => e.id === employeeId || e.loginId === employeeId);
     if (!emp) return;
 
     setAttendance(prev => {
@@ -411,20 +732,42 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
-   * Apply for Leave (Employee)
+   * Apply for Leave (Employee) - Connects to POST /api/v1/leaves
    */
-  const applyLeave = ({ leaveType, startDate, endDate, days, reason }) => {
+  const applyLeave = async ({ leaveType, startDate, endDate, days, reason }) => {
     if (!currentUser) return;
 
     // Check balance
     const balanceKey = leaveType.toLowerCase();
-    const available = currentUser.leaveBalances[balanceKey] || 0;
+    const available = currentUser.leaveBalances?.[balanceKey] || 0;
 
     if (balanceKey !== 'unpaid' && days > available) {
       addToast('Insufficient Balance', `You only have ${available} ${leaveType} leave days remaining.`, 'danger');
       return { success: false, error: 'Insufficient balance' };
     }
 
+    // 1. Try Backend Apply
+    if (backendConnected) {
+      try {
+        const res = await leaveApi.applyLeave({
+          leaveType: leaveType === 'Casual' ? 'Paid' : leaveType, // Map Casual to Paid if needed
+          startDate: new Date(startDate).toISOString(),
+          endDate: new Date(endDate).toISOString(),
+          remarks: reason
+        });
+
+        if (res) {
+          setLeaveRequests(prev => [res, ...prev]);
+          addToast('Leave Request Submitted', `Application for ${days} day(s) sent to HR on backend.`, 'info');
+          return { success: true, request: res };
+        }
+      } catch (err) {
+        console.warn('Backend applyLeave error:', err.message);
+        addToast('Notice', `Backend error: ${err.message}. Submitted locally.`, 'warning');
+      }
+    }
+
+    // 2. Local Fallback
     const newRequest = {
       id: `LR-${Date.now().toString().slice(-4)}`,
       employeeId: currentUser.id,
@@ -447,28 +790,43 @@ export const AppProvider = ({ children }) => {
   };
 
   /**
-   * Review Leave (Admin/HR Officer)
+   * Review Leave (Admin/HR Officer) - Connects to PATCH /api/v1/leaves/:id/approve
    */
-  const reviewLeave = (requestId, newStatus, comments = '') => {
-    const req = leaveRequests.find(r => r.id === requestId);
+  const reviewLeave = async (requestId, newStatus, comments = '') => {
+    const req = leaveRequests.find(r => r.id === requestId || r._id === requestId);
     if (!req) return;
 
+    // 1. Try Backend Review
+    if (backendConnected && (requestId.length === 24 || req._id?.length === 24)) {
+      try {
+        const idToUse = req._id || requestId;
+        const res = await leaveApi.reviewLeave(idToUse, newStatus, comments);
+        if (res) {
+          setLeaveRequests(prev => prev.map(r => (r.id === requestId || r._id === requestId) ? res : r));
+          addToast(`Leave ${newStatus}`, `Request has been ${newStatus.toLowerCase()} on backend.`, newStatus === 'Approved' ? 'success' : 'danger');
+          return;
+        }
+      } catch (err) {
+        console.warn('Backend reviewLeave error:', err.message);
+      }
+    }
+
+    // 2. Local Fallback Review
     setLeaveRequests(prev =>
       prev.map(r => {
-        if (r.id === requestId) {
+        if (r.id === requestId || r._id === requestId) {
           return { ...r, status: newStatus, reviewerComments: comments };
         }
         return r;
       })
     );
 
-    // If approved, deduct leave balance
     if (newStatus === 'Approved') {
       const balanceKey = req.leaveType.toLowerCase();
       setEmployees(prev =>
         prev.map(emp => {
           if (emp.id === req.employeeId || emp.loginId === req.loginId) {
-            const currentBal = emp.leaveBalances[balanceKey] || 0;
+            const currentBal = emp.leaveBalances?.[balanceKey] || 0;
             return {
               ...emp,
               leaveBalances: {
@@ -492,10 +850,24 @@ export const AppProvider = ({ children }) => {
   /**
    * Update Salary Structure (Admin Only)
    */
-  const updateSalaryStructure = (employeeId, newSalary) => {
+  const updateSalaryStructure = async (employeeId, newSalary) => {
+    if (backendConnected && employeeId && employeeId.length === 24) {
+      try {
+        await usersApi.updateUser(employeeId, {
+          salaryStructure: {
+            basic: newSalary.basic,
+            allowances: newSalary.specialAllowance,
+            deductions: newSalary.incomeTax
+          }
+        });
+      } catch (err) {
+        console.warn('Backend updateSalaryStructure error:', err.message);
+      }
+    }
+
     setEmployees(prev =>
       prev.map(emp => {
-        if (emp.id === employeeId || emp.loginId === employeeId) {
+        if (emp.id === employeeId || emp.loginId === employeeId || emp._id === employeeId) {
           return {
             ...emp,
             salary: { ...emp.salary, ...newSalary }
@@ -505,7 +877,7 @@ export const AppProvider = ({ children }) => {
       })
     );
 
-    if (currentUser && (currentUser.id === employeeId || currentUser.loginId === employeeId)) {
+    if (currentUser && (currentUser.id === employeeId || currentUser.loginId === employeeId || currentUser._id === employeeId)) {
       setCurrentUser(prev => ({
         ...prev,
         salary: { ...prev.salary, ...newSalary }
@@ -519,6 +891,7 @@ export const AppProvider = ({ children }) => {
    * Reset All Demo Data
    */
   const resetDemoData = () => {
+    clearStoredToken();
     setCompany(initialCompany);
     setEmployees(initialEmployees);
     setCurrentUser(initialEmployees[0]);
@@ -526,7 +899,7 @@ export const AppProvider = ({ children }) => {
     setLeaveRequests(initialLeaveRequests);
     setAnnouncements(initialAnnouncements);
     localStorage.clear();
-    addToast('System Reset', 'All demo data has been restored to factory defaults.', 'info');
+    addToast('System Reset', 'All demo data has been restored to defaults.', 'info');
   };
 
   return (
@@ -534,13 +907,19 @@ export const AppProvider = ({ children }) => {
       value={{
         theme,
         toggleTheme,
+        backendConnected,
+        checkBackendHealth,
+        isInitializing,
         company,
         setCompany,
         employees,
         currentUser,
         setCurrentUser,
         attendance,
+        setAttendance,
         leaveRequests,
+        setLeaveRequests,
+        payrolls,
         announcements,
         toasts,
         addToast,
@@ -559,7 +938,8 @@ export const AppProvider = ({ children }) => {
         applyLeave,
         reviewLeave,
         updateSalaryStructure,
-        resetDemoData
+        resetDemoData,
+        refreshBackendData
       }}
     >
       {children}

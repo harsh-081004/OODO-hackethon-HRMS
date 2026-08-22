@@ -14,7 +14,11 @@ import {
   Play,
   Square,
   Building,
-  CheckCircle2
+  CheckCircle2,
+  Server,
+  Wifi,
+  WifiOff,
+  RefreshCw
 } from 'lucide-react';
 
 export const Navbar = ({ activeTab, setActiveTab }) => {
@@ -30,12 +34,16 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
     checkIn,
     checkOut,
     leaveRequests,
-    resetDemoData
+    resetDemoData,
+    backendConnected,
+    checkBackendHealth,
+    refreshBackendData
   } = useApp();
 
   const [time, setTime] = useState(new Date());
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [isPinging, setIsPinging] = useState(false);
 
   // Live digital clock
   useEffect(() => {
@@ -46,13 +54,22 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
   // Today's attendance status for current user
   const today = new Date().toISOString().split('T')[0];
   const userTodayAttendance = attendance.find(
-    a => (a.employeeId === currentUser?.id || a.loginId === currentUser?.loginId) && a.date === today
+    a => (a.employeeId === currentUser?.id || a.loginId === currentUser?.loginId || a.employeeId === currentUser?._id) && a.date === today
   );
 
   const isCheckedIn = userTodayAttendance && userTodayAttendance.checkIn && !userTodayAttendance.checkOut;
 
   // Pending leaves count for notifications
   const pendingLeavesCount = leaveRequests.filter(r => r.status === 'Pending').length;
+
+  const handlePingServer = async () => {
+    setIsPinging(true);
+    await checkBackendHealth();
+    if (currentUser) {
+      await refreshBackendData(currentUser);
+    }
+    setTimeout(() => setIsPinging(false), 500);
+  };
 
   return (
     <header style={{
@@ -93,9 +110,40 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
             <span className="badge badge-primary" style={{ fontSize: '0.68rem', padding: '0.15rem 0.5rem' }}>
               Dayflow HRMS
             </span>
+
+            {/* Backend Connection Status Badge */}
+            <button
+              onClick={handlePingServer}
+              className={`badge ${backendConnected ? 'badge-success' : 'badge-warning'}`}
+              style={{
+                fontSize: '0.68rem',
+                padding: '0.15rem 0.55rem',
+                cursor: 'pointer',
+                border: 'none',
+                gap: '0.3rem'
+              }}
+              title={backendConnected ? 'Connected to Node.js Backend (:5000). Click to re-sync.' : 'Backend offline or starting. Click to ping server.'}
+            >
+              {backendConnected ? (
+                <>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'currentColor' }} />
+                  <span>API :5000</span>
+                </>
+              ) : (
+                <>
+                  <WifiOff size={10} />
+                  <span>Demo Mode</span>
+                </>
+              )}
+              {isPinging && <RefreshCw size={10} className="animate-spin" />}
+            </button>
           </div>
           <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-            {currentUser?.role === 'admin' ? 'HR Management & Officer Console' : 'Employee Self-Service Portal'}
+            {currentUser?.role === 'admin'
+              ? 'CEO & Executive Management Console'
+              : currentUser?.department === 'Human Resources'
+              ? 'HR Operations & Employee Portal'
+              : 'Employee Self-Service Portal'}
           </span>
         </div>
       </div>
@@ -120,70 +168,74 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
           </span>
         </div>
 
-        {/* Quick Check-In / Check-Out Action Button */}
-        {isCheckedIn ? (
-          <button
-            onClick={() => checkOut(currentUser.id)}
-            className="btn btn-danger btn-sm"
-            style={{
-              boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}
-          >
-            <Square size={14} fill="white" />
-            <span>Check Out ({userTodayAttendance.checkIn})</span>
-          </button>
-        ) : (
-          <button
-            onClick={() => checkIn(currentUser.id)}
-            className="btn btn-success btn-sm"
-            style={{
-              boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.4rem'
-            }}
-          >
-            <Play size={14} fill="white" />
-            <span>{userTodayAttendance?.checkOut ? 'Checked Out Today' : 'Punch In Now'}</span>
-          </button>
+        {/* Quick Check-In / Check-Out Action Button (Only for regular staff/HR, not CEO) */}
+        {currentUser?.role !== 'admin' && (
+          isCheckedIn ? (
+            <button
+              onClick={() => checkOut(currentUser?.id)}
+              className="btn btn-danger btn-sm"
+              style={{
+                boxShadow: '0 2px 8px rgba(239, 68, 68, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <Square size={14} fill="white" />
+              <span>Check Out ({userTodayAttendance.checkIn})</span>
+            </button>
+          ) : (
+            <button
+              onClick={() => checkIn(currentUser?.id)}
+              className="btn btn-success btn-sm"
+              style={{
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.4rem'
+              }}
+            >
+              <Play size={14} fill="white" />
+              <span>{userTodayAttendance?.checkOut ? 'Checked Out Today' : 'Punch In Now'}</span>
+            </button>
+          )
         )}
       </div>
 
       {/* Right: Role Switcher, Notifications, Theme, User Profile */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-        {/* Quick Switch Employee/Admin dropdown */}
-        <div style={{ position: 'relative' }}>
-          <select
-            value={currentUser?.id}
-            onChange={(e) => {
-              const selected = employees.find(emp => emp.id === e.target.value);
-              if (selected) setCurrentUser(selected);
-            }}
-            className="form-select"
-            style={{
-              padding: '0.35rem 0.75rem',
-              fontSize: '0.8rem',
-              fontWeight: 600,
-              width: 'auto',
-              cursor: 'pointer',
-              borderColor: 'var(--border-subtle)',
-              borderRadius: 'var(--radius-md)',
-              background: 'var(--bg-hover)'
-            }}
-            title="Fast switch between active user profiles"
-          >
-            <optgroup label="Switch Profile (Demo Mode)">
-              {employees.map(emp => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.fullName} ({emp.role === 'admin' ? 'HR / Admin' : 'Employee'})
-                </option>
-              ))}
-            </optgroup>
-          </select>
-        </div>
+        {/* Quick Switch Employee/Admin dropdown (Only Admin/CEO can switch) */}
+        {currentUser?.role === 'admin' && (
+          <div style={{ position: 'relative' }}>
+            <select
+              value={currentUser?.id || currentUser?._id}
+              onChange={(e) => {
+                const selected = employees.find(emp => emp.id === e.target.value || emp._id === e.target.value);
+                if (selected) setCurrentUser(selected);
+              }}
+              className="form-select"
+              style={{
+                padding: '0.35rem 0.75rem',
+                fontSize: '0.8rem',
+                fontWeight: 600,
+                width: 'auto',
+                cursor: 'pointer',
+                borderColor: 'var(--border-subtle)',
+                borderRadius: 'var(--radius-md)',
+                background: 'var(--bg-hover)'
+              }}
+              title="Fast switch between active user profiles (Admin / CEO Only)"
+            >
+              <optgroup label="Admin: Switch View / Profile">
+                {employees.map(emp => (
+                  <option key={emp.id || emp._id} value={emp.id || emp._id}>
+                    {emp.fullName} ({emp.role === 'admin' ? 'CEO / Executive Admin' : emp.department === 'Human Resources' ? 'HR Employee' : 'Employee'})
+                  </option>
+                ))}
+              </optgroup>
+            </select>
+          </div>
+        )}
 
         {/* Notifications */}
         <div style={{ position: 'relative' }}>
@@ -262,7 +314,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
                   fontSize: '0.78rem'
                 }}>
                   <CheckCircle2 size={14} color="var(--success)" style={{ display: 'inline', marginRight: '4px' }} />
-                  Dayflow HRMS System online & synced.
+                  {backendConnected ? 'Backend API connection active on :5000' : 'Operating in demo sandbox mode'}
                 </div>
               </div>
             </div>
@@ -295,8 +347,8 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
             }}
           >
             <img
-              src={currentUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.firstName}`}
-              alt={currentUser?.fullName}
+              src={currentUser?.avatar || `https://api.dicebear.com/7.x/avataaars/svg?seed=${currentUser?.firstName || 'User'}`}
+              alt={currentUser?.fullName || 'User'}
               style={{
                 width: '32px',
                 height: '32px',
@@ -306,7 +358,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
             />
             <div style={{ textAlign: 'left', display: 'flex', flexDirection: 'column', lineHeight: 1.1 }}>
               <span style={{ fontSize: '0.825rem', fontWeight: 700 }}>
-                {currentUser?.firstName}
+                {currentUser?.firstName || currentUser?.name || 'Account'}
               </span>
               <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                 {currentUser?.role === 'admin' ? 'Admin' : 'Employee'}
@@ -331,7 +383,7 @@ export const Navbar = ({ activeTab, setActiveTab }) => {
               <div style={{ padding: '0.5rem 0.75rem', borderBottom: '1px solid var(--border-subtle)', marginBottom: '0.5rem' }}>
                 <div style={{ fontWeight: 800, fontSize: '0.9rem' }}>{currentUser?.fullName}</div>
                 <div className="font-mono" style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '2px' }}>
-                  {currentUser?.loginId}
+                  {currentUser?.loginId || currentUser?.employeeId}
                 </div>
                 <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{currentUser?.email}</div>
               </div>

@@ -36,13 +36,16 @@ export const EmployeeManagement = ({ onSelectEmployee }) => {
   const [editingEmployee, setEditingEmployee] = useState(null);
   const [createdCredentials, setCreatedCredentials] = useState(null);
 
+  // Only staff employees (HR and all department staff; exclude CEO/Admin)
+  const staffEmployees = employees.filter(emp => emp.role !== 'admin');
+
   // Filter logic
-  const filteredEmployees = employees.filter(emp => {
+  const filteredEmployees = staffEmployees.filter(emp => {
     const matchesSearch =
-      emp.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.loginId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      emp.designation.toLowerCase().includes(searchTerm.toLowerCase());
+      (emp.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.loginId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (emp.designation || '').toLowerCase().includes(searchTerm.toLowerCase());
 
     const matchesDept = selectedDepartment === 'All' || emp.department === selectedDepartment;
     const matchesStatus = selectedStatus === 'All' || emp.status === selectedStatus;

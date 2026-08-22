@@ -1,40 +1,43 @@
 import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
-import { Eye, EyeOff, Lock, User, ShieldCheck, ArrowRight, Sparkles, Building2 } from 'lucide-react';
+import { Eye, EyeOff, Lock, Mail, User, ShieldCheck, ArrowRight, Sparkles, Building2, Wifi, WifiOff } from 'lucide-react';
 
 export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
-  const { login, company, employees } = useApp();
-  const [loginId, setLoginId] = useState('');
+  const { login, company, employees, backendConnected } = useApp();
+  const [loginIdOrEmail, setLoginIdOrEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!loginId.trim() || !password) {
+    if (!loginIdOrEmail.trim() || !password) {
       setError('Please fill in all credentials.');
       return;
     }
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      const res = login(loginId, password);
+    try {
+      const res = await login(loginIdOrEmail, password);
       setLoading(false);
       if (!res.success) {
-        setError(res.error === 'User not found' ? 'No user found with this Login ID / Email.' : 'Invalid password.');
+        setError(res.error || 'Authentication failed. Please verify your credentials.');
       } else if (res.isFirstLogin) {
         onFirstTimeLoginPrompt && onFirstTimeLoginPrompt(res.user);
       }
-    }, 400);
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Login request failed.');
+    }
   };
 
-  // Demo 1-click accounts helper
+  // Quick 1-click accounts helper
   const handleQuickLogin = (emp) => {
-    setLoginId(emp.loginId);
+    setLoginIdOrEmail(emp.email || emp.loginId);
     setPassword(emp.password || 'Password@123');
-    login(emp.loginId, emp.password || 'Password@123');
+    login(emp.email || emp.loginId, emp.password || 'Password@123');
   };
 
   return (
@@ -59,8 +62,8 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
         background: 'linear-gradient(90deg, var(--primary), var(--secondary), var(--accent-purple))'
       }} />
 
-      {/* App / Web Logo Container matching wireframe */}
-      <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+      {/* App / Web Logo Container */}
+      <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
         <div style={{
           display: 'inline-flex',
           alignItems: 'center',
@@ -69,7 +72,7 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
           background: 'var(--bg-hover)',
           borderRadius: 'var(--radius-lg)',
           border: '1px solid var(--border-subtle)',
-          marginBottom: '1rem'
+          marginBottom: '0.85rem'
         }}>
           <div style={{
             width: '2.5rem',
@@ -96,6 +99,12 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
           </div>
         </div>
 
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+          <span className={`badge ${backendConnected ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
+            {backendConnected ? '🟢 Connected to Node.js Backend API (:5000)' : '🟡 Running in Offline Demo Mode'}
+          </span>
+        </div>
+
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Sign In</h2>
         <p style={{ fontSize: '0.875rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
           Access your employee portal & workforce management
@@ -120,16 +129,16 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Login ID / Email */}
+        {/* Email or Login ID */}
         <div className="form-group">
           <label className="form-label" htmlFor="loginId">
-            <span>Login Id / Email</span>
+            <span>Corporate Email or Login ID</span>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-              e.g. {company.code}JODO20220001
+              e.g. sarah@odoo.com
             </span>
           </label>
           <div style={{ position: 'relative' }}>
-            <User size={18} style={{
+            <Mail size={18} style={{
               position: 'absolute',
               left: '1rem',
               top: '50%',
@@ -139,11 +148,11 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
             <input
               id="loginId"
               type="text"
-              className="form-input font-mono"
+              className="form-input"
               style={{ paddingLeft: '2.75rem' }}
-              placeholder="e.g. OIJODO20220001 or name@odoo.com"
-              value={loginId}
-              onChange={(e) => setLoginId(e.target.value)}
+              placeholder="e.g. sarah@odoo.com or OIJODO20220001"
+              value={loginIdOrEmail}
+              onChange={(e) => setLoginIdOrEmail(e.target.value)}
               required
             />
           </div>
@@ -192,7 +201,7 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
           </div>
         </div>
 
-        {/* SIGN IN BUTTON (Matching Purple Style from Wireframe) */}
+        {/* SIGN IN BUTTON */}
         <button
           type="submit"
           className="btn btn-primary btn-lg"
@@ -231,7 +240,7 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
 
       {/* Demo 1-Click Fast Switcher */}
       <div style={{
-        marginTop: '2rem',
+        marginTop: '1.75rem',
         paddingTop: '1.25rem',
         borderTop: '1px dashed var(--border-subtle)',
         textAlign: 'center'
@@ -253,7 +262,8 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
           {employees.slice(0, 3).map((emp) => (
             <button
-              key={emp.id}
+              key={emp.id || emp.email}
+              type="button"
               onClick={() => handleQuickLogin(emp)}
               className="btn btn-secondary btn-sm"
               style={{
@@ -269,9 +279,9 @@ export const SignIn = ({ onSwitchToSignUp, onFirstTimeLoginPrompt }) => {
                   borderRadius: '50%',
                   background: emp.role === 'admin' ? 'var(--accent-purple)' : 'var(--secondary)'
                 }} />
-                <strong>{emp.fullName}</strong> ({emp.role === 'admin' ? 'HR / Admin' : 'Employee'})
+                <strong>{emp.fullName}</strong> ({emp.role === 'admin' ? 'CEO' : emp.department === 'Human Resources' ? 'HR' : 'Employee'})
               </div>
-              <code style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>{emp.loginId}</code>
+              <code style={{ fontSize: '0.75rem', color: 'var(--text-subtle)' }}>{emp.email || emp.loginId}</code>
             </button>
           ))}
         </div>

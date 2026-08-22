@@ -1,9 +1,96 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { SignIn } from './SignIn';
 import { SignUp } from './SignUp';
 import { FirstTimePasswordModal } from './FirstTimePasswordModal';
 import { useApp } from '../../context/AppContext';
-import { Moon, Sun, Sparkles, HelpCircle, ShieldCheck, CheckCircle2, FileText, ChevronRight } from 'lucide-react';
+import { Moon, Sun, HelpCircle, ShieldCheck, Zap } from 'lucide-react';
+
+// Animated canvas particle mesh
+const ParticleCanvas = () => {
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+
+    let W = canvas.width = window.innerWidth;
+    let H = canvas.height = window.innerHeight;
+
+    const PARTICLE_COUNT = 60;
+    const particles = Array.from({ length: PARTICLE_COUNT }, () => ({
+      x: Math.random() * W,
+      y: Math.random() * H,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4,
+      r: Math.random() * 2 + 1,
+    }));
+
+    let rafId;
+
+    const draw = () => {
+      ctx.clearRect(0, 0, W, H);
+
+      // Draw connection lines
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(113, 75, 103, ${0.15 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
+      }
+
+      // Draw particles
+      particles.forEach(p => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(113, 75, 103, 0.35)';
+        ctx.fill();
+
+        p.x += p.vx;
+        p.y += p.vy;
+        if (p.x < 0 || p.x > W) p.vx *= -1;
+        if (p.y < 0 || p.y > H) p.vy *= -1;
+      });
+
+      rafId = requestAnimationFrame(draw);
+    };
+
+    draw();
+
+    const handleResize = () => {
+      W = canvas.width = window.innerWidth;
+      H = canvas.height = window.innerHeight;
+    };
+    window.addEventListener('resize', handleResize);
+
+    return () => {
+      cancelAnimationFrame(rafId);
+      window.removeEventListener('resize', handleResize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        inset: 0,
+        pointerEvents: 'none',
+        zIndex: 0,
+        opacity: 0.6
+      }}
+    />
+  );
+};
 
 export const AuthLayout = () => {
   const { theme, toggleTheme, company } = useApp();
@@ -16,117 +103,147 @@ export const AuthLayout = () => {
       minHeight: '100vh',
       display: 'flex',
       flexDirection: 'column',
-      background: 'radial-gradient(circle at 10% 20%, rgba(113, 75, 103, 0.15) 0%, transparent 40%), radial-gradient(circle at 90% 80%, rgba(0, 135, 132, 0.1) 0%, transparent 40%), var(--bg-app)',
-      position: 'relative'
+      background: theme === 'dark'
+        ? 'radial-gradient(ellipse at 15% 25%, rgba(113, 75, 103, 0.2) 0%, transparent 50%), radial-gradient(ellipse at 85% 75%, rgba(0, 135, 132, 0.15) 0%, transparent 50%), var(--bg-app)'
+        : 'radial-gradient(ellipse at 15% 25%, rgba(113, 75, 103, 0.08) 0%, transparent 50%), radial-gradient(ellipse at 85% 75%, rgba(0, 135, 132, 0.06) 0%, transparent 50%), var(--bg-app)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      {/* Top Header Bar with Theme Switch & Spec Guide */}
-      <header style={{
-        padding: '1.25rem 2rem',
+
+      {/* Animated particle mesh background */}
+      <ParticleCanvas />
+
+      {/* Floating ambient orbs */}
+      <div className="auth-bg">
+        <div className="auth-orb auth-orb-1" />
+        <div className="auth-orb auth-orb-2" />
+        <div className="auth-orb auth-orb-3" />
+      </div>
+
+      {/* Header bar */}
+      <header className="navbar-glass" style={{
+        padding: '1rem 2rem',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        borderBottom: '1px solid var(--border-subtle)',
-        background: 'var(--bg-card-glass)',
-        backdropFilter: 'blur(12px)'
+        position: 'relative',
+        zIndex: 10
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem' }}>
+          {/* 3D Logo Cube */}
           <div style={{
-            width: '2.5rem',
-            height: '2.5rem',
+            width: '2.6rem', height: '2.6rem',
             borderRadius: '12px',
             background: 'linear-gradient(135deg, var(--primary) 0%, #875A7B 100%)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white',
-            fontWeight: 800,
-            fontSize: '1.2rem',
-            boxShadow: '0 4px 12px var(--primary-glow)'
-          }}>
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: 'white', fontWeight: 900, fontSize: '1.1rem',
+            boxShadow: '0 4px 16px var(--primary-glow), 0 1px 3px rgba(0,0,0,0.2)',
+            transform: 'perspective(60px) rotateX(5deg) rotateY(-5deg)',
+            transition: 'transform 0.3s ease',
+            cursor: 'default',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'perspective(60px) rotateX(0deg) rotateY(0deg) scale(1.05)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'perspective(60px) rotateX(5deg) rotateY(-5deg)'}
+          >
             {company.code || 'OI'}
           </div>
+
           <div>
-            <h1 style={{ fontSize: '1.25rem', fontWeight: 800, lineHeight: 1.1 }}>
+            <h1 className="gradient-text" style={{ fontSize: '1.25rem', fontWeight: 900, lineHeight: 1.1 }}>
               Dayflow HRMS
             </h1>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-              Human Resource Management System • Odoo Standard
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+              Human Resource Management • Odoo Standard
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-          {/* Spec breakdown badge modal toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
           <button
             onClick={() => setShowSpecDrawer(!showSpecDrawer)}
             className="btn btn-secondary btn-sm"
-            style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}
           >
-            <HelpCircle size={15} color="var(--primary)" />
-            <span>Login ID Rule Breakdown</span>
+            <HelpCircle size={14} color="var(--primary)" />
+            Login ID Guide
           </button>
-
-          {/* Theme Switcher */}
-          <button
-            onClick={toggleTheme}
-            className="btn-icon btn-secondary"
-            title="Toggle theme"
-          >
-            {theme === 'dark' ? <Sun size={18} color="#f59e0b" /> : <Moon size={18} color="var(--primary)" />}
+          <button onClick={toggleTheme} className="btn-icon" title="Toggle theme">
+            {theme === 'dark' ? <Sun size={17} color="#f59e0b" /> : <Moon size={17} color="var(--primary)" />}
           </button>
         </div>
       </header>
 
-      {/* Main Centered Content */}
+      {/* Main content area */}
       <main style={{
         flex: 1,
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         padding: '2rem 1.5rem',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        position: 'relative',
+        zIndex: 10
       }}>
-        {/* Title corresponding to diagram */}
-        <div style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
-          <h2 style={{
-            fontSize: '2rem',
-            fontWeight: 800,
-            letterSpacing: '-0.03em',
-            background: 'linear-gradient(135deg, var(--text-main) 30%, var(--primary) 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
+
+        {/* Animated heading */}
+        <div style={{ textAlign: 'center', marginBottom: '1.75rem' }} className="animate-fade-in-up">
+          <div style={{
+            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+            padding: '0.3rem 0.9rem',
+            borderRadius: 'var(--radius-full)',
+            background: 'var(--primary-light)',
+            border: '1px solid var(--primary-glow)',
+            boxShadow: '0 0 20px var(--primary-glow)',
+            marginBottom: '0.75rem',
+            fontSize: '0.72rem', fontWeight: 700, color: 'var(--primary)',
+            letterSpacing: '0.06em', textTransform: 'uppercase'
           }}>
-            Human Resource Management System
+            <Zap size={12} />
+            Enterprise Workforce Platform
+          </div>
+
+          <h2 style={{
+            fontSize: '2.25rem',
+            fontWeight: 900,
+            letterSpacing: '-0.04em',
+            background: 'linear-gradient(135deg, var(--text-main) 20%, var(--primary) 60%, var(--secondary) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            backgroundClip: 'text',
+            lineHeight: 1.1,
+          }}>
+            Human Resource<br />Management System
           </h2>
-          <p style={{ fontSize: '0.95rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+          <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginTop: '0.5rem' }}>
             {company.tagline || 'Every workday, perfectly aligned.'}
           </p>
         </div>
 
-        {/* Sign In or Sign Up Form */}
-        {isSignUp ? (
-          <SignUp onSwitchToSignIn={() => setIsSignUp(false)} />
-        ) : (
-          <SignIn
-            onSwitchToSignUp={() => setIsSignUp(true)}
-            onFirstTimeLoginPrompt={(user) => setFirstTimeUser(user)}
-          />
-        )}
+        {/* Auth Card */}
+        <div className="animate-fade-in-up" style={{ animationDelay: '0.1s', width: '100%', display: 'flex', justifyContent: 'center' }}>
+          {isSignUp ? (
+            <SignUp onSwitchToSignIn={() => setIsSignUp(false)} />
+          ) : (
+            <SignIn
+              onSwitchToSignUp={() => setIsSignUp(true)}
+              onFirstTimeLoginPrompt={(user) => setFirstTimeUser(user)}
+            />
+          )}
+        </div>
 
-        {/* Specification Info Banner (from wireframe diagram notes) */}
+        {/* Spec Drawer */}
         {showSpecDrawer && (
-          <div className="glass-card animate-fade-in" style={{
-            marginTop: '2rem',
-            maxWidth: '720px',
+          <div className="glass-card animate-fade-in-up" style={{
+            marginTop: '1.75rem',
+            maxWidth: '700px',
             width: '100%',
             padding: '1.5rem',
             border: '1px solid var(--border-focus)',
-            background: 'var(--bg-card-glass)'
+            boxShadow: '0 0 30px var(--primary-glow), var(--shadow-xl)'
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.75rem' }}>
               <ShieldCheck size={20} color="var(--primary)" />
               <h3 style={{ fontSize: '1rem', fontWeight: 800 }}>
-                Specification Details: Auto-Generated Login ID & Workflow
+                Login ID Format & Workflow Specification
               </h3>
             </div>
 
@@ -135,20 +252,20 @@ export const AuthLayout = () => {
               padding: '1rem',
               borderRadius: 'var(--radius-md)',
               fontFamily: 'JetBrains Mono, monospace',
-              fontSize: '0.85rem',
+              fontSize: '0.84rem',
               marginBottom: '1rem'
             }}>
-              <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '0.25rem' }}>
-                Format: [OI] [First 2 of First & Last Name] [Year of Joining] [Serial Number]
+              <div style={{ color: 'var(--primary)', fontWeight: 700, marginBottom: '0.3rem' }}>
+                Format: [Company Code 2] + [Name 4] + [Year 4] + [Serial 4]
               </div>
               <div style={{ color: 'var(--text-muted)' }}>
-                Example: <strong style={{ color: 'var(--text-main)' }}>OIJODO20220001</strong>
+                Example: <strong style={{ color: 'var(--text-main)', letterSpacing: '0.05em' }}>OIJODO20220001</strong>
               </div>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.6 }}>
-                • <strong>OI</strong> → Odoo India (Company Name initials)<br/>
-                • <strong>JODO</strong> → First two letters of employee's first and last name (John Doe)<br/>
-                • <strong>2022</strong> → Year of Joining<br/>
-                • <strong>0001</strong> → Serial Number of Joining for that Year
+              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.5rem', lineHeight: 1.7 }}>
+                • <strong>OI</strong> → Odoo India (Company initials)<br />
+                • <strong>JODO</strong> → First 2 chars of First + Last Name (John Doe)<br />
+                • <strong>2022</strong> → Year of joining<br />
+                • <strong>0001</strong> → Sequential serial within that year
               </div>
             </div>
 
@@ -157,17 +274,17 @@ export const AuthLayout = () => {
               padding: '0.85rem 1rem',
               borderRadius: 'var(--radius-md)',
               fontSize: '0.8rem',
-              color: 'var(--text-main)',
-              lineHeight: 1.5,
+              lineHeight: 1.6,
               borderLeft: '4px solid var(--warning)'
             }}>
-              <strong>Note on Access:</strong> Normal employees do not register publicly. They are created inside the HRMS by the Admin/HR Officer, which automatically generates their unique Login ID and temporary secure password. On initial login, they are prompted to update their password.
+              <strong>Note:</strong> Employees are not registered publicly. They are onboarded by an Admin who
+              generates their unique Login ID and temporary password. On first login, they must set a new password.
             </div>
           </div>
         )}
       </main>
 
-      {/* First Time Password Modal */}
+      {/* First-time password modal */}
       {firstTimeUser && (
         <FirstTimePasswordModal
           user={firstTimeUser}
@@ -177,13 +294,15 @@ export const AuthLayout = () => {
 
       {/* Footer */}
       <footer style={{
-        padding: '1.25rem',
+        padding: '1rem',
         textAlign: 'center',
-        fontSize: '0.8rem',
-        color: 'var(--text-muted)',
-        borderTop: '1px solid var(--border-subtle)'
+        fontSize: '0.75rem',
+        color: 'var(--text-subtle)',
+        borderTop: '1px solid var(--border-subtle)',
+        position: 'relative',
+        zIndex: 10
       }}>
-        Dayflow HRMS • Powered by Odoo India • Designed for seamless workforce operations
+        Dayflow HRMS v2.0 • Powered by Odoo India • Full-Stack Node.js + MongoDB + React
       </footer>
     </div>
   );

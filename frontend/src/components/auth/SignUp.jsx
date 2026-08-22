@@ -3,7 +3,7 @@ import { useApp } from '../../context/AppContext';
 import { Upload, Building2, User, Mail, Phone, Lock, Eye, EyeOff, Check, AlertCircle, Sparkles } from 'lucide-react';
 
 export const SignUp = ({ onSwitchToSignIn }) => {
-  const { registerCompany, extractCompanyCode, generateLoginId } = useApp();
+  const { registerCompany, extractCompanyCode, backendConnected } = useApp();
 
   const [companyName, setCompanyName] = useState('Odoo India');
   const [logo, setLogo] = useState('');
@@ -35,14 +35,14 @@ export const SignUp = ({ onSwitchToSignIn }) => {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!companyName.trim() || !adminName.trim() || !email.trim() || !phone.trim() || !password) {
       setError('Please fill in all required registration fields.');
       return;
     }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters long.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
       return;
     }
     if (password !== confirmPassword) {
@@ -53,8 +53,8 @@ export const SignUp = ({ onSwitchToSignIn }) => {
     setError('');
     setLoading(true);
 
-    setTimeout(() => {
-      registerCompany({
+    try {
+      const res = await registerCompany({
         companyName,
         logo,
         adminName,
@@ -63,7 +63,13 @@ export const SignUp = ({ onSwitchToSignIn }) => {
         password
       });
       setLoading(false);
-    }, 450);
+      if (!res.success) {
+        setError(res.error || 'Registration failed. Please try again.');
+      }
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || 'Registration failed.');
+    }
   };
 
   return (
@@ -105,6 +111,13 @@ export const SignUp = ({ onSwitchToSignIn }) => {
             Dayflow HRMS • Company Registration
           </span>
         </div>
+
+        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '0.5rem' }}>
+          <span className={`badge ${backendConnected ? 'badge-success' : 'badge-warning'}`} style={{ fontSize: '0.7rem' }}>
+            {backendConnected ? '🟢 Live Backend Connected (:5000)' : '🟡 Offline Demo Workspace'}
+          </span>
+        </div>
+
         <h2 style={{ fontSize: '1.5rem', fontWeight: 800 }}>Create HRMS Workspace</h2>
         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
           Onboard your company, generate corporate Login IDs, and configure policies
@@ -129,7 +142,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
       )}
 
       <form onSubmit={handleSubmit}>
-        {/* Company Name + Upload Logo in matching layout */}
+        {/* Company Name + Upload Logo */}
         <div className="form-group">
           <label className="form-label" htmlFor="companyName">
             <span>Company Name</span>
@@ -158,7 +171,6 @@ export const SignUp = ({ onSwitchToSignIn }) => {
               />
             </div>
 
-            {/* Upload Logo Button matching wireframe */}
             <label
               htmlFor="logo-upload"
               className="btn btn-secondary"
@@ -218,7 +230,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.75rem' }}>
           <div className="form-group">
             <label className="form-label" htmlFor="email">
-              <span>Email</span>
+              <span>Corporate Email</span>
             </label>
             <div style={{ position: 'relative' }}>
               <Mail size={16} style={{
@@ -267,10 +279,11 @@ export const SignUp = ({ onSwitchToSignIn }) => {
           </div>
         </div>
 
-        {/* Password */}
+        {/* Password (min 8 characters) */}
         <div className="form-group">
           <label className="form-label" htmlFor="password">
             <span>Password</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Min. 8 characters</span>
           </label>
           <div style={{ position: 'relative' }}>
             <Lock size={18} style={{
@@ -285,9 +298,10 @@ export const SignUp = ({ onSwitchToSignIn }) => {
               type={showPassword ? 'text' : 'password'}
               className="form-input"
               style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
-              placeholder="Create secure password"
+              placeholder="Create secure password (8+ chars)"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              minLength={8}
               required
             />
             <button
@@ -331,6 +345,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
               placeholder="Re-enter password"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
+              minLength={8}
               required
             />
             <button
@@ -366,7 +381,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
         }}>
           <div>
             <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-              Auto-Generated System Login ID:
+              Auto-Generated System Login ID Preview:
             </div>
             <div className="font-mono" style={{ fontWeight: 800, fontSize: '0.95rem', color: 'var(--primary)', marginTop: '2px' }}>
               {previewLoginId}
@@ -377,7 +392,7 @@ export const SignUp = ({ onSwitchToSignIn }) => {
           </span>
         </div>
 
-        {/* Purple Sign Up CTA Button */}
+        {/* Sign Up CTA Button */}
         <button
           type="submit"
           className="btn btn-primary btn-lg"

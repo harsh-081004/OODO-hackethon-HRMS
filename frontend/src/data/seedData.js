@@ -10,6 +10,43 @@ export const initialCompany = {
 };
 
 export const initialEmployees = [
+  // 1. CEO / Executive Administrator (Oversees company; data not shown in staff attendance)
+  {
+    id: "EMP-000",
+    loginId: "OIALVA20200001",
+    firstName: "Alexander",
+    lastName: "Vance",
+    fullName: "Alexander Vance",
+    email: "alexander.vance@odoo.com",
+    role: "admin", // Executive CEO Admin
+    phone: "+91 99999 11111",
+    joiningDate: "2020-01-01",
+    department: "Executive Management",
+    designation: "Chief Executive Officer (CEO)",
+    status: "Active",
+    avatar: "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=200&auto=format&fit=crop&q=80",
+    address: "Penthouse 10, SkyCity Towers, Ahmedabad, Gujarat",
+    emergencyContact: "+91 99999 00000 (Executive Office)",
+    bloodGroup: "O+",
+    password: "Password@123",
+    isFirstLogin: false,
+    leaveBalances: {
+      paid: 30,
+      sick: 15,
+      casual: 10,
+      unpaid: 0
+    },
+    salary: {
+      basic: 300000,
+      hra: 120000,
+      specialAllowance: 60000,
+      providentFund: 36000,
+      professionalTax: 2500,
+      incomeTax: 45000
+    }
+  },
+
+  // 2. HR Manager (HR is an Employee — data appears in employee rosters & attendance)
   {
     id: "EMP-001",
     loginId: "OISAJE20210001",
@@ -17,11 +54,11 @@ export const initialEmployees = [
     lastName: "Jenkins",
     fullName: "Sarah Jenkins",
     email: "sarah.jenkins@odoo.com",
-    role: "admin", // Admin / HR Officer
+    role: "employee", // HR Employee
     phone: "+91 98765 43210",
     joiningDate: "2021-03-15",
     department: "Human Resources",
-    designation: "Head of People Operations",
+    designation: "HR Manager & Talent Lead",
     status: "Active",
     avatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&auto=format&fit=crop&q=80",
     address: "402, Royal Palms, SG Highway, Ahmedabad, Gujarat",
@@ -44,6 +81,8 @@ export const initialEmployees = [
       incomeTax: 16500
     }
   },
+
+  // 3. Senior Engineer
   {
     id: "EMP-002",
     loginId: "OIJODO20220001",
@@ -78,6 +117,8 @@ export const initialEmployees = [
       incomeTax: 11200
     }
   },
+
+  // 4. Product Designer
   {
     id: "EMP-003",
     loginId: "OIPRSH20230002",
@@ -112,6 +153,8 @@ export const initialEmployees = [
       incomeTax: 9500
     }
   },
+
+  // 5. DevOps Specialist
   {
     id: "EMP-004",
     loginId: "OIALRI20230003",
@@ -146,6 +189,8 @@ export const initialEmployees = [
       incomeTax: 10800
     }
   },
+
+  // 6. Marketing Lead
   {
     id: "EMP-005",
     loginId: "OIMISC20240004",
@@ -183,7 +228,7 @@ export const initialEmployees = [
 ];
 
 export const initialAttendance = [
-  // Today's records
+  // Today's records for all staff employees (including HR)
   {
     id: "ATT-101",
     employeeId: "EMP-001",
@@ -194,7 +239,7 @@ export const initialAttendance = [
     checkOut: null,
     status: "Present",
     hoursWorked: 0,
-    device: "Office Terminal #1"
+    device: "HR Portal Terminal"
   },
   {
     id: "ATT-102",
@@ -248,91 +293,76 @@ export const initialAttendance = [
 
 export const initialLeaveRequests = [
   {
-    id: "LR-001",
-    employeeId: "EMP-005",
-    employeeName: "Michael Scott",
-    loginId: "OIMISC20240004",
-    department: "Sales & Marketing",
+    id: "LR-501",
+    employeeId: "EMP-001",
+    employeeName: "Sarah Jenkins",
+    loginId: "OISAJE20210001",
+    department: "Human Resources",
     leaveType: "Paid",
-    startDate: new Date().toISOString().split("T")[0],
-    endDate: new Date(Date.now() + 86400000).toISOString().split("T")[0],
-    days: 2,
-    reason: "Attending annual regional sales leadership symposium",
-    status: "Approved",
-    appliedOn: "2026-08-18",
-    reviewerComments: "Approved. Have a productive summit!"
-  },
-  {
-    id: "LR-002",
-    employeeId: "EMP-002",
-    employeeName: "John Doe",
-    loginId: "OIJODO20220001",
-    department: "Engineering",
-    leaveType: "Paid",
-    startDate: new Date(Date.now() + 86400000 * 3).toISOString().split("T")[0],
-    endDate: new Date(Date.now() + 86400000 * 5).toISOString().split("T")[0],
+    startDate: "2026-09-01",
+    endDate: "2026-09-03",
     days: 3,
-    reason: "Family travel and long weekend trip",
+    reason: "Attending National HR Tech Summit & Keynote",
     status: "Pending",
     appliedOn: "2026-08-20",
     reviewerComments: null
   },
   {
-    id: "LR-003",
+    id: "LR-502",
+    employeeId: "EMP-002",
+    employeeName: "John Doe",
+    loginId: "OIJODO20220001",
+    department: "Engineering",
+    leaveType: "Sick",
+    startDate: "2026-08-24",
+    endDate: "2026-08-25",
+    days: 2,
+    reason: "Viral fever and physician recommended rest",
+    status: "Pending",
+    appliedOn: "2026-08-21",
+    reviewerComments: null
+  },
+  {
+    id: "LR-503",
     employeeId: "EMP-003",
     employeeName: "Priya Sharma",
     loginId: "OIPRSH20230002",
     department: "Design",
-    leaveType: "Sick",
-    startDate: "2026-08-12",
-    endDate: "2026-08-13",
+    leaveType: "Casual",
+    startDate: "2026-08-15",
+    endDate: "2026-08-16",
     days: 2,
-    reason: "Viral flu and recovery",
+    reason: "Family function in native town",
     status: "Approved",
-    appliedOn: "2026-08-11",
-    reviewerComments: "Get well soon Priya."
-  },
-  {
-    id: "LR-004",
-    employeeId: "EMP-004",
-    employeeName: "Alex Rivera",
-    loginId: "OIALRI20230003",
-    department: "Engineering",
-    leaveType: "Unpaid",
-    startDate: new Date(Date.now() + 86400000 * 10).toISOString().split("T")[0],
-    endDate: new Date(Date.now() + 86400000 * 12).toISOString().split("T")[0],
-    days: 3,
-    reason: "Personal home relocation work",
-    status: "Pending",
-    appliedOn: "2026-08-21",
-    reviewerComments: null
+    appliedOn: "2026-08-10",
+    reviewerComments: "Approved by CEO. Have a great time!"
   }
 ];
 
 export const initialAnnouncements = [
   {
     id: "ANN-1",
-    title: "Odoo Dayflow 2.0 Live Rollout",
-    content: "Welcome to our upgraded Dayflow HRMS portal. Explore real-time punch timesheets, self-service leave requests, and live payslip access.",
-    date: "2026-08-20",
-    tag: "Company Update",
-    author: "Sarah Jenkins (HR Director)"
+    title: "Q3 All-Hands Meeting & Strategy Alignment",
+    content: "Join us this Friday at 4:00 PM IST for our quarterly executive town hall.",
+    date: "2026-08-21",
+    author: "Alexander Vance (CEO)",
+    priority: "High"
   },
   {
     id: "ANN-2",
-    title: "Upcoming Holiday: Janmashtami Festival",
-    content: "Please note our offices will be closed on Friday, August 28th for the festive holiday. Enjoy the long weekend!",
-    date: "2026-08-19",
-    tag: "Holiday Notice",
-    author: "HR Operations"
+    title: "Updated Leave Policy & Annual Carry-Forward",
+    content: "HR has published the revised 2026 leave guidelines. Check the employee portal for details.",
+    date: "2026-08-18",
+    author: "Sarah Jenkins (HR Manager)",
+    priority: "Normal"
   }
 ];
 
 export const departmentList = [
+  "Executive Management",
+  "Human Resources",
   "Engineering",
   "Design",
-  "Human Resources",
   "Sales & Marketing",
-  "Finance & Operations",
-  "Product Management"
+  "Finance & Operations"
 ];

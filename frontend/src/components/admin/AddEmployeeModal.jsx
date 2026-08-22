@@ -2,10 +2,10 @@ import React, { useState } from 'react';
 import { Modal } from '../common/Modal';
 import { useApp } from '../../context/AppContext';
 import { departmentList } from '../../data/seedData';
-import { UserPlus, Sparkles, Check, DollarSign, Calendar, Shield, Briefcase, Mail, Phone, MapPin } from 'lucide-react';
+import { UserPlus, Sparkles, Check, DollarSign, Calendar, Shield, Briefcase, Mail, Phone, MapPin, Loader2 } from 'lucide-react';
 
 export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
-  const { addEmployee, company, generateLoginId } = useApp();
+  const { addEmployee, company, generateLoginId, backendConnected } = useApp();
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -31,41 +31,56 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
   const [casualLeave, setCasualLeave] = useState(5);
 
   const [activeTab, setActiveTab] = useState('general'); // 'general' | 'salary' | 'leave'
+  const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   // Live Login ID preview
   const previewYear = joiningDate ? joiningDate.substring(0, 4) : new Date().getFullYear().toString();
   const liveLoginId = generateLoginId(company.code, firstName || 'XX', lastName || 'XX', previewYear);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!firstName.trim() || !lastName.trim() || !email.trim()) {
+      setErrorMessage('Please fill in all required fields marked with *');
       return;
     }
 
-    const res = addEmployee({
-      firstName,
-      lastName,
-      email,
-      phone,
-      role,
-      department,
-      designation,
-      joiningDate,
-      address,
-      bloodGroup,
-      basicSalary,
-      hra,
-      specialAllowance,
-      providentFund,
-      incomeTax,
-      paidLeave,
-      sickLeave,
-      casualLeave
-    });
+    setSubmitting(true);
+    setErrorMessage('');
 
-    if (res.success) {
-      onClose();
-      onCreated && onCreated(res.employee, res.tempPassword);
+    try {
+      const res = await addEmployee({
+        firstName,
+        lastName,
+        email,
+        phone,
+        role,
+        department,
+        designation,
+        joiningDate,
+        address,
+        bloodGroup,
+        basicSalary,
+        hra,
+        specialAllowance,
+        providentFund,
+        incomeTax,
+        paidLeave,
+        sickLeave,
+        casualLeave
+      });
+
+      setSubmitting(false);
+
+      if (res?.success) {
+        onClose();
+        onCreated && onCreated(res.employee, res.tempPassword);
+      } else {
+        setErrorMessage(res?.error || 'Failed to create employee profile.');
+      }
+    } catch (err) {
+      setSubmitting(false);
+      setErrorMessage(err.message || 'Error occurred while saving employee.');
     }
   };
 
@@ -76,7 +91,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
       title="Onboard New Employee"
       maxWidth="680px"
     >
-      {/* Live System ID Preview Banner matching diagram */}
+      {/* Live System ID Preview Banner */}
       <div style={{
         padding: '0.85rem 1.15rem',
         borderRadius: 'var(--radius-md)',
@@ -95,10 +110,24 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
             {liveLoginId}
           </div>
         </div>
-        <span className="badge badge-primary">
-          <Sparkles size={12} /> Auto-Formatted
+        <span className={`badge ${backendConnected ? 'badge-success' : 'badge-primary'}`}>
+          <Sparkles size={12} /> {backendConnected ? 'Backend Auto-ID' : 'Auto-Formatted'}
         </span>
       </div>
+
+      {errorMessage && (
+        <div style={{
+          padding: '0.75rem 1rem',
+          borderRadius: 'var(--radius-md)',
+          background: 'var(--danger-light)',
+          color: 'var(--danger)',
+          fontSize: '0.85rem',
+          fontWeight: 600,
+          marginBottom: '1rem'
+        }}>
+          ⚠️ {errorMessage}
+        </div>
+      )}
 
       {/* Form Tabs */}
       <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1.25rem', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '0.5rem' }}>
@@ -367,6 +396,7 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
             type="button"
             className="btn btn-secondary"
             onClick={onClose}
+            disabled={submitting}
             style={{ flex: 1 }}
           >
             Cancel
@@ -374,9 +404,10 @@ export const AddEmployeeModal = ({ isOpen, onClose, onCreated }) => {
           <button
             type="submit"
             className="btn btn-primary"
+            disabled={submitting}
             style={{ flex: 2 }}
           >
-            <UserPlus size={16} /> Complete Onboarding & Generate Credentials
+            {submitting ? 'Generating Employee Profile...' : 'Complete Onboarding & Generate Credentials'}
           </button>
         </div>
       </form>

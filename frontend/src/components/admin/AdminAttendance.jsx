@@ -76,10 +76,17 @@ export const AdminAttendance = () => {
     addToast('Attendance Updated', `Status marked as ${newStatus} for ${date}`, 'success');
   };
 
+  // Only regular staff employees (exclude Admin profiles)
+  const staffEmployees = employees.filter(e => e.role !== 'admin');
+
   // Export CSV
   const handleExportCSV = () => {
     const headers = ['Employee Name', 'Login ID', 'Date', 'Check In', 'Check Out', 'Hours Worked', 'Status', 'Device'];
-    const rows = attendance.map(a => [
+    const staffAttendance = attendance.filter(a =>
+      staffEmployees.some(e => e.id === a.employeeId || e.loginId === a.loginId || e._id === a.employeeId || e.fullName === a.employeeName)
+    );
+
+    const rows = staffAttendance.map(a => [
       `"${a.employeeName}"`,
       `"${a.loginId}"`,
       `"${a.date}"`,
@@ -100,11 +107,11 @@ export const AdminAttendance = () => {
     link.click();
     document.body.removeChild(link);
 
-    addToast('Export Successful', 'Attendance register downloaded as CSV.', 'success');
+    addToast('Export Successful', 'Staff attendance register downloaded as CSV.', 'success');
   };
 
-  // Filtered employees
-  const filteredEmployees = employees.filter(e =>
+  // Filtered staff employees
+  const filteredEmployees = staffEmployees.filter(e =>
     e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.loginId.toLowerCase().includes(searchTerm.toLowerCase()) ||
     e.department.toLowerCase().includes(searchTerm.toLowerCase())

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import { PayslipModal } from './PayslipModal';
 import { EditEmployeeModal } from './EditEmployeeModal';
+import { payrollApi } from '../../services/api';
 import {
   DollarSign,
   TrendingUp,
@@ -11,34 +12,80 @@ import {
   Search,
   CheckCircle2,
   PieChart,
-  ShieldCheck
+  ShieldCheck,
+  PlusCircle,
+  Clock
 } from 'lucide-react';
 
 export const AdminPayroll = () => {
-  const { employees, updateSalaryStructure } = useApp();
+  const { employees, updateSalaryStructure, payrolls, backendConnected, addToast } = useApp();
 
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedPayslipEmp, setSelectedPayslipEmp] = useState(null);
   const [editingEmployee, setEditingEmployee] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState('August 2026');
+  const [processing, setProcessing] = useState(false);
+
+  // Only staff employees (including HR, excluding CEO)
+  const staffEmployees = employees.filter(emp => emp.role !== 'admin');
 
   // Compute totals
-  const totalGrossPayroll = employees.reduce((acc, emp) => {
+  const totalGrossPayroll = staffEmployees.reduce((acc, emp) => {
     const s = emp.salary || {};
     return acc + (s.basic || 0) + (s.hra || 0) + (s.specialAllowance || 0);
   }, 0);
 
-  const totalDeductions = employees.reduce((acc, emp) => {
+  const totalDeductions = staffEmployees.reduce((acc, emp) => {
     const s = emp.salary || {};
     return acc + (s.providentFund || 0) + (s.professionalTax || 2500) + (s.incomeTax || 0);
   }, 0);
 
   const totalNetDisbursement = totalGrossPayroll - totalDeductions;
 
-  const filteredEmployees = employees.filter(e =>
-    e.fullName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.loginId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    e.department.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredEmployees = staffEmployees.filter(e =>
+    (e.fullName || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (e.loginId || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (e.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const handleRunBatchPayroll = async () => {
+    if (!backendConnected) {
+      addToast('Batch Payroll Processed', 'August 2026 salary disbursement simulated for all staff.', 'success');
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const currentMonth = 8;
+      const currentYear = 2026;
+
+      for (const emp of employees) {
+        if (emp.id && emp.id.length === 24) {
+          const s = emp.salary || {};
+          const allowances = (s.hra || 0) + (s.specialAllowance || 0);
+          const deductions = (s.providentFund || 0) + (s.professionalTax || 2500) + (s.incomeTax || 0);
+
+          try {
+            await payrollApi.createPayroll({
+              user: emp.id,
+              month: currentMonth,
+              year: currentYear,
+              basicSalary: s.basic || 75000,
+              allowances,
+              deductions
+            });
+          } catch {
+            // Ignore duplicate or individual record errors in batch
+          }
+        }
+      }
+      addToast('Payroll Synced', 'August 2026 payroll batch generated and recorded on backend.', 'success');
+    } catch (err) {
+      addToast('Batch Notice', err.message || 'Batch run finished.', 'info');
+    } finally {
+      setProcessing(false);
+    }
+  };
 
   return (
     <div className="page-wrapper animate-fade-in">
@@ -59,6 +106,14 @@ export const AdminPayroll = () => {
         </div>
 
         <div style={{ display: 'flex', gap: '0.75rem' }}>
+          <button
+            onClick={handleRunBatchPayroll}
+            className="btn btn-secondary"
+            disabled={processing}
+          >
+            <Clock size={16} />
+            <span>{processing ? 'Processing Batch...' : 'Run Monthly Batch'}</span>
+          </button>
           <button
             onClick={() => setSelectedPayslipEmp(employees[0])}
             className="btn btn-primary"
@@ -153,7 +208,7 @@ export const AdminPayroll = () => {
 
                 return (
                   <tr
-                    key={emp.id}
+                    key={emp.id || emp._id}
                     style={{ borderBottom: '1px solid var(--border-subtle)', transition: 'background var(--transition-fast)' }}
                     onMouseEnter={(e) => e.currentTarget.style.background = 'var(--bg-hover)'}
                     onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -213,7 +268,7 @@ export const AdminPayroll = () => {
           isOpen={!!selectedPayslipEmp}
           onClose={() => setSelectedPayslipEmp(null)}
           employee={selectedPayslipEmp}
-          month="August 2026"
+          month={selectedMonth}
         />
       )}
 

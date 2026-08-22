@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useApp } from '../../context/AppContext';
 import {
   LayoutDashboard,
@@ -8,36 +8,45 @@ import {
   DollarSign,
   BarChart3,
   UserCircle,
-  FileBadge,
   LogOut,
   Sparkles,
-  ChevronRight,
-  ShieldAlert
+  ShieldCheck,
+  Cpu
 } from 'lucide-react';
 
-export const Sidebar = ({ activeTab, setActiveTab }) => {
-  const { currentUser, logout, leaveRequests } = useApp();
-  const isAdmin = currentUser?.role === 'admin';
+const NAV_COLORS = {
+  dashboard: '#714B67',
+  employees: '#008784',
+  attendance: '#3b82f6',
+  leaves: '#f59e0b',
+  payroll: '#10b981',
+  reports: '#9333ea',
+  profile: '#f97316',
+};
 
-  // Count pending leaves for badge
+export const Sidebar = ({ activeTab, setActiveTab }) => {
+  const { currentUser, logout, leaveRequests, company, backendConnected } = useApp();
+  const isAdmin = currentUser?.role === 'admin';
+  const [hoveredItem, setHoveredItem] = useState(null);
+
   const pendingLeavesCount = leaveRequests.filter(r => r.status === 'Pending').length;
 
   const adminNavItems = [
-    { id: 'dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'employees', label: 'Employee Directory', icon: Users },
-    { id: 'attendance', label: 'Attendance Records', icon: CalendarCheck },
-    { id: 'leaves', label: 'Leave Approvals', icon: PlaneTakeoff, badge: pendingLeavesCount > 0 ? pendingLeavesCount : null },
-    { id: 'payroll', label: 'Payroll Management', icon: DollarSign },
-    { id: 'reports', label: 'Analytics & Reports', icon: BarChart3 },
-    { id: 'profile', label: 'My Profile', icon: UserCircle }
+    { id: 'dashboard',  label: 'Dashboard',           icon: LayoutDashboard },
+    { id: 'employees',  label: 'Employee Directory',   icon: Users },
+    { id: 'attendance', label: 'Attendance Records',   icon: CalendarCheck },
+    { id: 'leaves',     label: 'Leave Approvals',      icon: PlaneTakeoff, badge: pendingLeavesCount > 0 ? pendingLeavesCount : null },
+    { id: 'payroll',    label: 'Payroll Management',   icon: DollarSign },
+    { id: 'reports',    label: 'Analytics & Reports',  icon: BarChart3 },
+    { id: 'profile',    label: 'My Profile',           icon: UserCircle },
   ];
 
   const employeeNavItems = [
-    { id: 'dashboard', label: 'Overview', icon: LayoutDashboard },
-    { id: 'profile', label: 'My Profile', icon: UserCircle },
-    { id: 'attendance', label: 'My Attendance', icon: CalendarCheck },
-    { id: 'leaves', label: 'Apply for Leave', icon: PlaneTakeoff },
-    { id: 'payroll', label: 'My Salary & Payslips', icon: DollarSign }
+    { id: 'dashboard',  label: 'Overview',             icon: LayoutDashboard },
+    { id: 'profile',    label: 'My Profile',           icon: UserCircle },
+    { id: 'attendance', label: 'My Attendance',        icon: CalendarCheck },
+    { id: 'leaves',     label: 'Apply for Leave',      icon: PlaneTakeoff },
+    { id: 'payroll',    label: 'Salary & Payslips',    icon: DollarSign },
   ];
 
   const navItems = isAdmin ? adminNavItems : employeeNavItems;
@@ -52,83 +61,124 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
       height: 'calc(100vh - 70px)',
       position: 'sticky',
       top: '70px',
-      padding: '1.25rem 0.85rem',
-      flexShrink: 0
+      padding: '1.1rem 0.8rem',
+      flexShrink: 0,
+      boxShadow: '2px 0 16px rgba(0,0,0,0.04)',
     }}>
-      {/* Role Pill Banner */}
+
+      {/* Role Badge */}
       <div style={{
-        padding: '0.65rem 0.85rem',
+        padding: '0.6rem 0.85rem',
         borderRadius: 'var(--radius-md)',
-        background: isAdmin ? 'var(--primary-light)' : 'var(--secondary-light)',
-        border: `1px solid ${isAdmin ? 'var(--primary-glow)' : 'rgba(0, 135, 132, 0.2)'}`,
-        marginBottom: '1.25rem',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between'
+        background: isAdmin
+          ? 'linear-gradient(135deg, var(--primary-light), var(--bg-hover))'
+          : 'linear-gradient(135deg, var(--secondary-light), var(--bg-hover))',
+        border: `1px solid ${isAdmin ? 'var(--primary-glow)' : 'var(--secondary-glow)'}`,
+        marginBottom: '1.1rem',
+        boxShadow: isAdmin ? '0 4px 12px var(--primary-glow)' : '0 4px 12px var(--secondary-glow)',
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{
-            width: '8px',
-            height: '8px',
-            borderRadius: '50%',
-            background: isAdmin ? 'var(--primary)' : 'var(--secondary)'
-          }} />
-          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: isAdmin ? 'var(--primary)' : 'var(--secondary)' }}>
-            {isAdmin ? 'HR / ADMIN PORTAL' : 'EMPLOYEE PORTAL'}
-          </span>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="beacon" style={{ color: isAdmin ? 'var(--primary)' : 'var(--secondary)' }}>
+              <span style={{
+                display: 'block',
+                width: '8px', height: '8px',
+                borderRadius: '50%',
+                background: 'currentColor'
+              }} />
+            </div>
+            <span style={{
+              fontSize: '0.72rem', fontWeight: 800,
+              color: isAdmin ? 'var(--primary)' : 'var(--secondary)',
+              textTransform: 'uppercase', letterSpacing: '0.06em'
+            }}>
+              {isAdmin ? 'HR Admin' : 'Employee'}
+            </span>
+          </div>
+          {isAdmin && <ShieldCheck size={14} color="var(--primary)" />}
         </div>
-        <span className="font-mono" style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-          {currentUser?.loginId}
-        </span>
+        <div className="font-mono" style={{
+          fontSize: '0.68rem', color: 'var(--text-muted)',
+          marginTop: '3px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'
+        }}>
+          {currentUser?.loginId || currentUser?.employeeId}
+        </div>
       </div>
 
-      {/* Navigation Links */}
-      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', flex: 1 }}>
-        {navItems.map((item) => {
+      {/* Navigation Items */}
+      <nav style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem', flex: 1 }}>
+        {navItems.map((item, index) => {
           const Icon = item.icon;
           const isActive = activeTab === item.id;
+          const color = NAV_COLORS[item.id] || 'var(--primary)';
+          const isHov = hoveredItem === item.id;
 
           return (
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
+              onMouseEnter={() => setHoveredItem(item.id)}
+              onMouseLeave={() => setHoveredItem(null)}
+              className="animate-fade-in"
               style={{
+                animationDelay: `${index * 0.05}s`,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '0.75rem 1rem',
+                padding: '0.68rem 0.9rem',
                 borderRadius: 'var(--radius-md)',
                 background: isActive
-                  ? 'linear-gradient(135deg, var(--primary) 0%, #875A7B 100%)'
-                  : 'transparent',
-                color: isActive ? '#ffffff' : 'var(--text-main)',
+                  ? `color-mix(in srgb, ${color} 14%, var(--bg-card))`
+                  : isHov ? 'var(--bg-hover)' : 'transparent',
+                color: isActive ? color : isHov ? 'var(--text-main)' : 'var(--text-muted)',
                 fontWeight: isActive ? 700 : 500,
-                fontSize: '0.9rem',
-                border: 'none',
+                fontSize: '0.875rem',
+                border: isActive ? `1px solid color-mix(in srgb, ${color} 30%, transparent)` : '1px solid transparent',
                 cursor: 'pointer',
-                transition: 'all var(--transition-fast)',
-                textAlign: 'left'
-              }}
-              onMouseEnter={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'var(--bg-hover)';
-              }}
-              onMouseLeave={(e) => {
-                if (!isActive) e.currentTarget.style.background = 'transparent';
+                transition: 'all var(--transition-normal)',
+                textAlign: 'left',
+                fontFamily: 'inherit',
+                transform: isActive ? 'translateX(2px)' : isHov ? 'translateX(3px)' : 'translateX(0)',
+                boxShadow: isActive ? `0 2px 12px color-mix(in srgb, ${color} 25%, transparent), inset 3px 0 0 ${color}` : 'none',
+                position: 'relative',
+                overflow: 'hidden',
               }}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                <Icon size={18} style={{ color: isActive ? '#ffffff' : 'var(--primary)' }} />
+              {/* Shimmer on active */}
+              {isActive && (
+                <div style={{
+                  position: 'absolute', inset: 0,
+                  background: `linear-gradient(90deg, transparent, color-mix(in srgb, ${color} 8%, transparent), transparent)`,
+                  pointerEvents: 'none'
+                }} />
+              )}
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', position: 'relative', zIndex: 1 }}>
+                <div style={{
+                  width: '30px', height: '30px',
+                  borderRadius: 'var(--radius-sm)',
+                  background: isActive || isHov
+                    ? `color-mix(in srgb, ${color} 15%, transparent)`
+                    : 'transparent',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  transition: 'all var(--transition-fast)',
+                  boxShadow: isActive ? `0 0 10px color-mix(in srgb, ${color} 30%, transparent)` : 'none'
+                }}>
+                  <Icon size={17} color={isActive ? color : isHov ? color : 'var(--text-subtle)'} />
+                </div>
                 <span>{item.label}</span>
               </div>
 
               {item.badge && (
                 <span style={{
-                  padding: '0.15rem 0.5rem',
+                  padding: '0.15rem 0.55rem',
                   borderRadius: 'var(--radius-full)',
-                  background: isActive ? '#ffffff' : 'var(--danger)',
-                  color: isActive ? 'var(--danger)' : '#ffffff',
-                  fontSize: '0.72rem',
-                  fontWeight: 800
+                  background: 'var(--danger)',
+                  color: 'white',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  boxShadow: '0 0 8px var(--danger-glow)',
+                  animation: 'pulseGlow 2s ease-in-out infinite'
                 }}>
                   {item.badge}
                 </span>
@@ -138,22 +188,70 @@ export const Sidebar = ({ activeTab, setActiveTab }) => {
         })}
       </nav>
 
-      {/* Quick Bottom Help Card */}
+      {/* Footer Info Card */}
       <div style={{
-        marginTop: 'auto',
-        padding: '1rem',
+        marginTop: '1rem',
+        padding: '0.85rem',
         borderRadius: 'var(--radius-md)',
         background: 'var(--bg-hover)',
         border: '1px solid var(--border-subtle)',
-        fontSize: '0.78rem'
+        boxShadow: 'var(--shadow-sm)',
       }}>
-        <div style={{ fontWeight: 700, marginBottom: '0.2rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
-          <Sparkles size={14} color="var(--primary)" /> Dayflow HRMS
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.35rem' }}>
+          <Cpu size={13} color="var(--primary)" />
+          <span style={{ fontWeight: 800, fontSize: '0.78rem' }}>Dayflow HRMS</span>
+          <span style={{
+            marginLeft: 'auto',
+            display: 'inline-flex', alignItems: 'center', gap: '3px',
+            fontSize: '0.65rem', fontWeight: 700,
+            color: backendConnected ? 'var(--success)' : 'var(--warning)'
+          }}>
+            <span style={{
+              width: '6px', height: '6px', borderRadius: '50%',
+              background: 'currentColor',
+              boxShadow: backendConnected ? '0 0 6px var(--success)' : '0 0 6px var(--warning)'
+            }} />
+            {backendConnected ? 'Live' : 'Demo'}
+          </span>
         </div>
-        <p style={{ color: 'var(--text-muted)', lineHeight: 1.4 }}>
-          Auto Login ID logic active. Employee punch and leave sync in real-time.
+        <p style={{ color: 'var(--text-muted)', fontSize: '0.72rem', lineHeight: 1.5 }}>
+          v2.0 • {company?.name || 'Odoo India'}<br />
+          Auto Login IDs • Real-time Sync
         </p>
       </div>
+
+      {/* Sign Out Button */}
+      <button
+        onClick={logout}
+        style={{
+          marginTop: '0.5rem',
+          display: 'flex', alignItems: 'center', gap: '0.6rem',
+          padding: '0.6rem 0.9rem',
+          borderRadius: 'var(--radius-md)',
+          background: 'transparent',
+          border: '1px solid transparent',
+          color: 'var(--text-muted)',
+          fontSize: '0.875rem',
+          fontWeight: 600,
+          cursor: 'pointer',
+          transition: 'all var(--transition-fast)',
+          fontFamily: 'inherit',
+          width: '100%',
+        }}
+        onMouseEnter={e => {
+          e.currentTarget.style.background = 'var(--danger-light)';
+          e.currentTarget.style.color = 'var(--danger)';
+          e.currentTarget.style.borderColor = 'var(--danger-glow)';
+        }}
+        onMouseLeave={e => {
+          e.currentTarget.style.background = 'transparent';
+          e.currentTarget.style.color = 'var(--text-muted)';
+          e.currentTarget.style.borderColor = 'transparent';
+        }}
+      >
+        <LogOut size={16} />
+        Sign Out
+      </button>
     </aside>
   );
 };
