@@ -390,7 +390,7 @@ export const AppProvider = ({ children }) => {
     try {
       await noticeApi.deleteNotice(noticeId);
       setNotices(prev => prev.filter(n => n.id !== noticeId));
-      addToast('Notice Deleted', 'Notice removed permanently.', 'info');
+      addToast('Notice Deleted Successfully', 'The notice has been removed from the company board.', 'success');
       return { success: true };
     } catch (err) {
       addToast('Error', err.message || 'Failed to delete notice.', 'danger');
