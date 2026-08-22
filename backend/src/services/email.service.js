@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const config = require('../config/config');
 
 let transport;
 if (process.env.SMTP_HOST) {
@@ -64,7 +65,7 @@ const sendWelcomeEmail = async (to, password, employeeName = 'Employee') => {
         <em>Note: Please change your temporary password immediately upon your first login for security purposes.</em>
       </p>
       <div style="text-align: center; margin: 30px 0;">
-        <a href="http://localhost:5173/login" style="background-color: #714B67; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
+        <a href="${config.frontendUrl}/login" style="background-color: #714B67; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: bold; display: inline-block;">
           Login to Dashboard
         </a>
       </div>
@@ -94,7 +95,7 @@ const sendPayslipEmail = async (to, payslipNumber, pdfBuffer) => {
 
 const sendVerificationEmail = async (to, token) => {
   const subject = 'Verify your Email - Case Point HRMS';
-  const verificationEmailUrl = `http://localhost:5173/verify-email?token=${token}`;
+  const verificationEmailUrl = `${config.frontendUrl}/verify-email?token=${token}`;
   
   const html = `
     <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #eaeaeb; border-radius: 8px;">
