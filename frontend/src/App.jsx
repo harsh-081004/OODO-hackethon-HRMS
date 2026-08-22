@@ -2,6 +2,7 @@ import React from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { useApp } from './context/AppContext';
 import { AuthLayout } from './components/auth/AuthLayout';
+import { VerifyEmail } from './components/auth/VerifyEmail';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
 import { ToastContainer } from './components/common/Toast';
@@ -30,7 +31,10 @@ export const App = () => {
   if (!currentUser) {
     return (
       <>
-        <AuthLayout />
+        <Routes>
+          <Route path="/verify-email" element={<VerifyEmail />} />
+          <Route path="*" element={<AuthLayout />} />
+        </Routes>
         <ToastContainer />
       </>
     );
