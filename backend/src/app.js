@@ -1,3 +1,5 @@
+const dns = require('dns');
+dns.setDefaultResultOrder('ipv4first');
 const express = require('express');
 const helmet = require('helmet');
 const cors = require('cors');
